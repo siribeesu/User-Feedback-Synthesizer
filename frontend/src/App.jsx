@@ -21,7 +21,14 @@ import {
   CheckCircle2,
   UploadCloud,
   Sun,
-  Moon
+  Moon,
+  Copy,
+  Check,
+  ShieldCheck,
+  AlertTriangle,
+  Quote,
+  ArrowUpRight,
+  Filter
 } from 'lucide-react';
 import './App.css';
 
@@ -36,6 +43,7 @@ export default function App() {
   const [themes, setThemes] = useState([]);
   const [selectedThemeId, setSelectedThemeId] = useState(null);
   const [themeDetail, setThemeDetail] = useState(null);
+  const [sidebarSearch, setSidebarSearch] = useState('');
   const [searchQuery, setSearchQuery] = useState('checkout bugs');
   const [sourceFilter, setSourceFilter] = useState('All');
   const [ratingFilter, setRatingFilter] = useState('All');
@@ -43,9 +51,13 @@ export default function App() {
   const [digest, setDigest] = useState(null);
   const [isSynthesizing, setIsSynthesizing] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [copiedDigest, setCopiedDigest] = useState(false);
+  const [copiedTheme, setCopiedTheme] = useState(false);
+  const [copiedQuoteIdx, setCopiedQuoteIdx] = useState(null);
   const fileInputRef = useRef(null);
   const folderInputRef = useRef(null);
 
@@ -70,10 +82,14 @@ export default function App() {
 
   // Initial load
   useEffect(() => {
-    fetchHealth();
-    fetchThemes();
-    fetchDigest();
+    refreshAllData();
   }, []);
+
+  const refreshAllData = async () => {
+    setIsRefreshing(true);
+    await Promise.all([fetchHealth(), fetchThemes(), fetchDigest()]);
+    setIsRefreshing(false);
+  };
 
   // When themes load, select first theme
   useEffect(() => {
@@ -90,14 +106,14 @@ export default function App() {
     }
   }, [selectedThemeId]);
 
-  // Run initial search
+  // Run search when filters change
   useEffect(() => {
     handleSearch();
   }, [sourceFilter, ratingFilter]);
 
   const showNotification = (msg) => {
     setNotification(msg);
-    setTimeout(() => setNotification(''), 4000);
+    setTimeout(() => setNotification(''), 4500);
   };
 
   const fetchHealth = async () => {
@@ -144,7 +160,7 @@ export default function App() {
     if (e) e.preventDefault();
     setIsSearching(true);
     try {
-      let url = `${API_BASE}/search?query=${encodeURIComponent(searchQuery || 'checkout')}&limit=15`;
+      let url = `${API_BASE}/search?query=${encodeURIComponent(searchQuery || 'feedback')}&limit=15`;
       if (sourceFilter !== 'All') url += `&source_type=${encodeURIComponent(sourceFilter)}`;
       if (ratingFilter !== 'All') {
         url += `&min_rating=${ratingFilter}&max_rating=${ratingFilter}`;
@@ -166,7 +182,7 @@ export default function App() {
       await fetchThemes();
       if (selectedThemeId) await fetchThemeDetail(selectedThemeId);
       await fetchDigest();
-      showNotification('Mental models successfully synthesized via Hindsight!');
+      showNotification('Mental models successfully synthesized via Hindsight Biomimetic memory!');
     } catch (err) {
       showNotification('Synthesis error: ' + err.message);
     } finally {
@@ -183,7 +199,7 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(feedbackInput)
       });
-      showNotification('Customer feedback retained into memory bank!');
+      showNotification('Feedback retained into Hindsight memory bank!');
       setFeedbackInput({
         title: '',
         content: '',
@@ -233,10 +249,10 @@ export default function App() {
       });
       const res = await fetch(`${API_BASE}/ingest/batch`, {
         method: 'POST',
-        body: formData,
+        body: formData
       });
       const data = await res.json();
-      showNotification(`Extracted & retained ${data.total_retained} feedback records from ${data.total_files} file(s)!`);
+      showNotification(`Batch processed: Extracted & retained ${data.total_retained || 0} feedback memories!`);
       setSelectedFiles([]);
       fetchThemes();
     } catch (err) {
@@ -246,7 +262,27 @@ export default function App() {
     }
   };
 
+  const copyToClipboard = (text, type, idx = null) => {
+    navigator.clipboard.writeText(text);
+    if (type === 'digest') {
+      setCopiedDigest(true);
+      setTimeout(() => setCopiedDigest(false), 2000);
+    } else if (type === 'theme') {
+      setCopiedTheme(true);
+      setTimeout(() => setCopiedTheme(false), 2000);
+    } else if (type === 'quote') {
+      setCopiedQuoteIdx(idx);
+      setTimeout(() => setCopiedQuoteIdx(null), 2000);
+    }
+  };
+
   const totalCitations = themes.reduce((acc, t) => acc + (t.evidence_count || 0), 0);
+
+  // Filtered themes by sidebar query
+  const filteredThemes = themes.filter((t) =>
+    t.name.toLowerCase().includes(sidebarSearch.toLowerCase()) ||
+    (t.query && t.query.toLowerCase().includes(sidebarSearch.toLowerCase()))
+  );
 
   return (
     <div className="app-container">
@@ -254,12 +290,15 @@ export default function App() {
       <header className="header">
         <div className="brand-section">
           <div className="logo-badge">
-            <Brain size={24} />
+            <Brain size={26} />
           </div>
           <div>
-            <h1 className="header-title">User Feedback Synthesizer</h1>
+            <div className="header-title-row">
+              <h1 className="header-title">User Feedback Synthesizer</h1>
+              <span className="version-badge">v2.4 Biomimetic</span>
+            </div>
             <p className="header-subtitle">
-              Evidence-backed product intelligence powered by <strong>Hindsight</strong> biomimetic memory
+              Evidence-backed product intelligence grounded by <strong>Hindsight</strong> memory banks
             </p>
           </div>
         </div>
@@ -272,13 +311,29 @@ export default function App() {
             title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
           >
             {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
-            <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+            <span>{theme === 'dark' ? 'Light' : 'Dark'}</span>
+          </button>
+
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={refreshAllData}
+            title="Refresh All Data"
+          >
+            <RefreshCw size={14} className={isRefreshing ? 'spin' : ''} />
+            <span>Sync</span>
           </button>
 
           {health?.hindsight_backend === 'online' ? (
-            <span className="badge-live">● Hindsight Server: ONLINE (:8888)</span>
+            <span className="badge-live">
+              <span className="pulse-dot" style={{ background: '#10b981' }}></span>
+              Hindsight: ONLINE (:8888)
+            </span>
           ) : (
-            <span className="badge-offline">○ Hindsight: LOCAL EMBEDDED</span>
+            <span className="badge-offline">
+              <span className="pulse-dot" style={{ background: '#f59e0b' }}></span>
+              Hindsight: LOCAL EMBEDDED
+            </span>
           )}
 
           <button
@@ -287,62 +342,84 @@ export default function App() {
             disabled={isSynthesizing}
           >
             <Sparkles size={16} className={isSynthesizing ? 'spin' : ''} />
-            {isSynthesizing ? 'Synthesizing...' : '⚡ Re-Synthesize'}
+            {isSynthesizing ? 'Synthesizing...' : '⚡ Run Synthesis'}
           </button>
         </div>
       </header>
 
+      {/* Notification Toast */}
       {notification && (
         <div className="notification-banner">
-          <Sparkles size={16} />
-          {notification}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <Sparkles size={18} />
+            <span>{notification}</span>
+          </div>
+          <button
+            className="btn-ghost"
+            style={{ color: 'inherit', padding: '2px 6px' }}
+            onClick={() => setNotification('')}
+          >
+            ✕
+          </button>
         </div>
       )}
 
-      {/* Metrics Row */}
+      {/* Executive KPI Metric Strip */}
       <div className="metrics-grid">
-        <div className="metric-card">
-          <div className="metric-icon-wrap">
+        <div className="metric-card accent-blue">
+          <div className="metric-card-content">
+            <div className="metric-label">Retained Records</div>
+            <div className="metric-value">75+</div>
+            <div className="metric-subtext">
+              <CheckCircle2 size={13} color="var(--accent)" /> Multi-channel support
+            </div>
+          </div>
+          <div className="metric-icon-wrap blue">
             <MessageSquare size={22} />
           </div>
-          <div>
-            <div className="metric-value">75+</div>
-            <div className="metric-label">Retained Records</div>
-          </div>
         </div>
 
-        <div className="metric-card">
-          <div className="metric-icon-wrap">
+        <div className="metric-card accent-purple">
+          <div className="metric-card-content">
+            <div className="metric-label">Standing Themes</div>
+            <div className="metric-value">{themes.length}</div>
+            <div className="metric-subtext">
+              <ShieldCheck size={13} color="var(--purple)" /> 100% Directive Enforced
+            </div>
+          </div>
+          <div className="metric-icon-wrap purple">
             <Layers size={22} />
           </div>
-          <div>
-            <div className="metric-value">{themes.length}</div>
-            <div className="metric-label">Standing Themes</div>
-          </div>
         </div>
 
-        <div className="metric-card">
-          <div className="metric-icon-wrap">
+        <div className="metric-card accent-green">
+          <div className="metric-card-content">
+            <div className="metric-label">Evidence Citations</div>
+            <div className="metric-value">{totalCitations}</div>
+            <div className="metric-subtext">
+              <CheckCircle2 size={13} color="var(--success-text)" /> Strictly Grounded
+            </div>
+          </div>
+          <div className="metric-icon-wrap green">
             <FileText size={22} />
           </div>
-          <div>
-            <div className="metric-value">{totalCitations}</div>
-            <div className="metric-label">Evidence Citations</div>
-          </div>
         </div>
 
-        <div className="metric-card">
-          <div className="metric-icon-wrap">
-            <Star size={22} />
-          </div>
-          <div>
+        <div className="metric-card accent-amber">
+          <div className="metric-card-content">
+            <div className="metric-label">Release Sentiment</div>
             <div className="metric-value">2.7 / 5.0</div>
-            <div className="metric-label">Avg Sentiment</div>
+            <div className="metric-subtext" style={{ color: 'var(--danger)' }}>
+              <TrendingDown size={13} /> v2.3 Checkout Regression
+            </div>
+          </div>
+          <div className="metric-icon-wrap amber">
+            <Star size={22} />
           </div>
         </div>
       </div>
 
-      {/* Tabs Navigation */}
+      {/* Modern Segmented Navigation Tabs */}
       <nav className="tabs-nav">
         <button
           className={`tab-btn ${activeTab === 'themes' ? 'active' : ''}`}
@@ -350,6 +427,7 @@ export default function App() {
         >
           <Layers size={17} />
           Synthesized Themes & Drill-down
+          <span className="tab-counter">{themes.length}</span>
         </button>
 
         <button
@@ -357,15 +435,17 @@ export default function App() {
           onClick={() => setActiveTab('search')}
         >
           <Search size={17} />
-          Search Feedback (Recall)
+          Feedback Recall & Explorer
+          {searchResults.length > 0 && <span className="tab-counter">{searchResults.length}</span>}
         </button>
 
         <button
           className={`tab-btn ${activeTab === 'ingest' ? 'active' : ''}`}
           onClick={() => setActiveTab('ingest')}
         >
-          <Send size={17} />
+          <Upload size={17} />
           Ingestion Pipeline
+          {selectedFiles.length > 0 && <span className="tab-counter">{selectedFiles.length} staged</span>}
         </button>
 
         <button
@@ -373,41 +453,77 @@ export default function App() {
           onClick={() => setActiveTab('digest')}
         >
           <FileText size={17} />
-          Weekly PM Digest
+          Executive PM Digest
         </button>
       </nav>
 
       {/* TAB 1: THEMES & DRILL-DOWN */}
       {activeTab === 'themes' && (
         <div className="theme-split">
-          <div className="theme-list">
-            <h3 style={{ fontSize: '15px', color: 'var(--text-muted)', margin: '0 0 4px 0' }}>Standing Themes</h3>
-            {themes.map((t) => (
-              <div
-                key={t.id}
-                className={`theme-item ${selectedThemeId === t.id ? 'active' : ''}`}
-                onClick={() => setSelectedThemeId(t.id)}
-              >
-                <div className="theme-item-title">{t.name}</div>
-                <div className="theme-item-meta">
-                  <span>{t.evidence_count} sources cited</span>
-                  <Tag size={12} />
+          {/* Left Theme Sidebar */}
+          <div className="theme-sidebar">
+            <div className="theme-sidebar-header">
+              <h3 style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text-bold)', margin: 0 }}>
+                Standing Mental Models ({filteredThemes.length})
+              </h3>
+            </div>
+
+            <input
+              type="text"
+              className="theme-search-input"
+              placeholder="Filter standing themes..."
+              value={sidebarSearch}
+              onChange={(e) => setSidebarSearch(e.target.value)}
+            />
+
+            <div className="theme-list">
+              {filteredThemes.map((t) => (
+                <div
+                  key={t.id}
+                  className={`theme-item ${selectedThemeId === t.id ? 'active' : ''}`}
+                  onClick={() => setSelectedThemeId(t.id)}
+                >
+                  <div className="theme-item-top">
+                    <h4 className="theme-item-title">{t.name}</h4>
+                  </div>
+                  <div className="theme-item-meta">
+                    <span className="citation-pill">{t.evidence_count} citations</span>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                      Strict Directive
+                    </span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
 
+          {/* Right Theme Detail View */}
           <div className="theme-detail-panel">
             {themeDetail ? (
               <div>
                 <div className="theme-detail-header">
-                  <h2 className="theme-detail-title">{themeDetail.name}</h2>
-                  <p className="theme-detail-query">Query: "{themeDetail.query}"</p>
-                  <div style={{ marginTop: '10px', fontSize: '13px', color: 'var(--text-muted)' }}>
-                    Confidence & Grounding:{' '}
-                    <span style={{ color: 'var(--success-text)', fontWeight: '600' }}>
-                      Strict Directive Enforced ({themeDetail.evidence_count} Sources)
-                    </span>
+                  <div className="theme-detail-top-row">
+                    <div>
+                      <h2 className="theme-detail-title">{themeDetail.name}</h2>
+                      <div className="theme-detail-query-box">
+                        <strong>Hindsight Mental Model Query:</strong> "{themeDetail.query}"
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      style={{ fontSize: '12px', padding: '6px 12px' }}
+                      onClick={() => copyToClipboard(themeDetail.observation, 'theme')}
+                    >
+                      {copiedTheme ? <Check size={14} color="var(--success-text)" /> : <Copy size={14} />}
+                      <span>{copiedTheme ? 'Copied!' : 'Copy Analysis'}</span>
+                    </button>
+                  </div>
+
+                  <div className="theme-grounding-chip">
+                    <ShieldCheck size={14} />
+                    Strict Grounding Directive Enforced ({themeDetail.evidence_count} Verified Sources)
                   </div>
                 </div>
 
@@ -415,45 +531,71 @@ export default function App() {
                   {themeDetail.observation || 'No observation generated yet.'}
                 </div>
 
-                <h3 className="section-heading">💬 Verified Customer Quotes</h3>
+                <div className="section-heading-row">
+                  <h3 className="section-heading">
+                    <Quote size={18} color="var(--accent)" />
+                    Verified Customer Quotes Grounding This Theme
+                  </h3>
+                  <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                    Showing top {Math.min(5, themeDetail.evidence_facts?.length || 0)} citations
+                  </span>
+                </div>
+
                 {themeDetail.evidence_facts && themeDetail.evidence_facts.length > 0 ? (
-                  <div>
+                  <div className="quotes-list">
                     {themeDetail.evidence_facts.slice(0, 5).map((f, i) => (
                       <div key={i} className="quote-card">
                         <p className="quote-text">"{f.text}"</p>
-                        <div className="quote-meta">{f.context}</div>
+                        <div className="quote-footer">
+                          <span className="quote-context">
+                            <Tag size={12} color="var(--accent)" />
+                            {f.context}
+                          </span>
+                          <button
+                            type="button"
+                            className="btn-ghost"
+                            onClick={() => copyToClipboard(f.text, 'quote', i)}
+                            title="Copy Quote"
+                          >
+                            {copiedQuoteIdx === i ? <Check size={12} color="var(--success-text)" /> : <Copy size={12} />}
+                            <span>{copiedQuoteIdx === i ? 'Copied' : 'Copy'}</span>
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p style={{ color: 'var(--text-muted)' }}>No quotes cited.</p>
+                  <p style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>No quotes cited for this model.</p>
                 )}
               </div>
             ) : (
-              <p style={{ color: 'var(--text-muted)' }}>Select a theme from the left to view details.</p>
+              <p style={{ color: 'var(--text-muted)' }}>Select a theme from the left to inspect details.</p>
             )}
           </div>
         </div>
       )}
 
-      {/* TAB 2: SEARCH (RECALL) */}
+      {/* TAB 2: FEEDBACK RECALL & SEARCH */}
       {activeTab === 'search' && (
-        <div>
+        <div className="search-container">
           <form onSubmit={handleSearch} className="search-bar-row">
-            <input
-              type="text"
-              className="search-input"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search feedback memories (e.g. checkout bugs, pricing complaints, dark mode)..."
-            />
+            <div className="search-input-wrapper">
+              <Search size={18} className="search-input-icon" />
+              <input
+                type="text"
+                className="search-input"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search raw feedback memories (e.g. checkout bugs, pricing complaints, dark mode)..."
+              />
+            </div>
 
             <select
               className="filter-select"
               value={sourceFilter}
               onChange={(e) => setSourceFilter(e.target.value)}
             >
-              <option value="All">All Sources</option>
+              <option value="All">All Channels</option>
               <option value="App Store">App Store</option>
               <option value="Google Play">Google Play</option>
               <option value="Zendesk">Zendesk</option>
@@ -468,38 +610,67 @@ export default function App() {
               onChange={(e) => setRatingFilter(e.target.value)}
             >
               <option value="All">All Ratings</option>
-              <option value="1">1 Star</option>
+              <option value="1">1 Star Only (Defects)</option>
               <option value="2">2 Stars</option>
               <option value="3">3 Stars</option>
               <option value="4">4 Stars</option>
-              <option value="5">5 Stars</option>
+              <option value="5">5 Stars (Praise)</option>
             </select>
 
             <button type="submit" className="btn-primary" disabled={isSearching}>
               <Search size={16} />
-              {isSearching ? 'Searching...' : 'Recall'}
+              {isSearching ? 'Searching...' : 'Search'}
             </button>
           </form>
 
+          {/* Quick preset chips */}
+          <div className="quick-filter-chips">
+            <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600' }}>Quick Filters:</span>
+            {[
+              { label: '🚨 Checkout Bugs', query: 'checkout error crash bug' },
+              { label: '🌙 Dark Mode', query: 'dark mode theme display' },
+              { label: '💰 Pricing & Billing', query: 'price cost subscription expensive' },
+              { label: '⚡ Performance', query: 'slow lag battery performance' }
+            ].map((chip, idx) => (
+              <button
+                key={idx}
+                type="button"
+                className={`quick-chip ${searchQuery === chip.query ? 'active' : ''}`}
+                onClick={() => {
+                  setSearchQuery(chip.query);
+                  setTimeout(() => handleSearch(), 50);
+                }}
+              >
+                {chip.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="results-header">
+            <span>
+              Showing <strong>{searchResults.length}</strong> matching feedback items
+            </span>
+            <span>Sorted by Biomimetic Semantic Relevance</span>
+          </div>
+
           <div className="results-list">
-            <p style={{ color: '#94a3b8', fontSize: '13px', margin: '0 0 10px 0' }}>
-              Found <strong>{searchResults.length}</strong> ranked matches in Hindsight memory:
-            </p>
             {searchResults.map((r, idx) => (
               <div key={idx} className="result-card">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div className="result-card-top">
                   <h4 className="result-title">
-                    #{idx + 1}. {r.metadata?.title || r.text.substring(0, 60)}
+                    {r.metadata?.title || `Feedback Record #${idx + 1}`}
                   </h4>
-                  <span style={{ color: '#fbbf24', fontSize: '13px', fontWeight: '600' }}>
-                    ★ {r.metadata?.rating || '3'}/5
-                  </span>
+                  <div className="result-rating-stars">
+                    {'★'.repeat(r.metadata?.rating || 1)}
+                    {'☆'.repeat(5 - (r.metadata?.rating || 1))}
+                  </div>
                 </div>
-                <p className="result-body">"{r.text}"</p>
+
+                <p className="result-body">{r.text}</p>
+
                 <div className="result-tags">
-                  <span>👤 {r.metadata?.user_name || 'Anonymous'}</span>
-                  <span>•</span>
-                  <span>📱 {r.metadata?.source || 'Channel'}</span>
+                  <span className="channel-badge">{r.metadata?.source || 'Channel'}</span>
+                  <span>👤 {r.metadata?.user_name || 'Anonymous User'}</span>
                   <span>•</span>
                   <span>🏷️ Version: <code>{r.metadata?.app_version || 'N/A'}</code></span>
                   <span>•</span>
@@ -515,10 +686,13 @@ export default function App() {
       {activeTab === 'ingest' && (
         <div className="ingest-grid">
           {/* Left Column: Drag & Drop Archives & Folders */}
-          <div>
-            <h3 className="section-heading">Batch Archive & Folder Upload</h3>
-            <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginBottom: '16px' }}>
-              Drag & drop customer support exports (<strong>.zip</strong>), interview transcripts (<strong>.txt, .md</strong>), or feedback dumps (<strong>.csv, .json</strong>).
+          <div className="ingest-card-panel">
+            <h3 className="section-heading" style={{ marginBottom: '6px' }}>
+              <UploadCloud size={20} color="var(--accent)" />
+              Batch Archive & Folder Ingestion
+            </h3>
+            <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginBottom: '18px' }}>
+              Drop customer support exports, interview transcripts, or feedback dumps into memory.
             </p>
 
             <div
@@ -529,32 +703,40 @@ export default function App() {
               onClick={() => fileInputRef.current?.click()}
             >
               <div className="drop-zone-icon">
-                <UploadCloud size={24} />
+                <UploadCloud size={28} />
               </div>
-              <div style={{ fontWeight: '600', color: 'var(--text-bold)', fontSize: '14px' }}>
-                Drop .zip archives, folders, or CSV/JSON files here
-              </div>
-              <div style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
-                Auto-extracts nested tickets, transcripts, and reviews
+              <h4 className="drop-zone-title">
+                Drag & Drop .zip archives, folders, or CSV/JSON files here
+              </h4>
+              <p className="drop-zone-desc">
+                Supports batch unpacking of nested interview notes and ticket exports
+              </p>
+
+              <div className="format-tags">
+                <span className="format-pill">.ZIP</span>
+                <span className="format-pill">.CSV</span>
+                <span className="format-pill">.JSON</span>
+                <span className="format-pill">.TXT</span>
+                <span className="format-pill">.MD</span>
               </div>
 
-              <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }} onClick={(e) => e.stopPropagation()}>
+              <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }} onClick={(e) => e.stopPropagation()}>
                 <button
                   type="button"
                   className="btn-secondary"
-                  style={{ fontSize: '12px', padding: '6px 12px' }}
+                  style={{ fontSize: '12px', padding: '7px 14px' }}
                   onClick={() => fileInputRef.current?.click()}
                 >
-                  <FileArchive size={14} /> Browse Files (.zip, .csv)
+                  <FileArchive size={14} /> Browse Archives / Files
                 </button>
 
                 <button
                   type="button"
                   className="btn-secondary"
-                  style={{ fontSize: '12px', padding: '6px 12px' }}
+                  style={{ fontSize: '12px', padding: '7px 14px' }}
                   onClick={() => folderInputRef.current?.click()}
                 >
-                  <Folder size={14} /> Choose Folder
+                  <Folder size={14} /> Choose Entire Folder
                 </button>
               </div>
 
@@ -583,14 +765,14 @@ export default function App() {
             </div>
 
             {selectedFiles.length > 0 && (
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '14px' }}>
-                  <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-                    Staged Files (<strong>{selectedFiles.length}</strong>)
+              <div style={{ marginTop: '18px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-bold)' }}>
+                    Staged for Ingestion (<strong>{selectedFiles.length}</strong>)
                   </span>
                   <button
                     type="button"
-                    style={{ background: 'none', border: 'none', color: 'var(--danger)', fontSize: '12px', cursor: 'pointer' }}
+                    style={{ background: 'none', border: 'none', color: 'var(--danger)', fontSize: '12px', cursor: 'pointer', fontWeight: '600' }}
                     onClick={() => setSelectedFiles([])}
                   >
                     Clear All
@@ -601,7 +783,7 @@ export default function App() {
                   {selectedFiles.map((file, idx) => (
                     <div key={idx} className="file-preview-item">
                       <div className="file-preview-name">
-                        {file.name.endsWith('.zip') ? <FileArchive size={16} color="#fbbf24" /> : <FileText size={16} color="#60a5fa" />}
+                        {file.name.endsWith('.zip') ? <FileArchive size={16} color="#fbbf24" /> : <FileText size={16} color="var(--accent)" />}
                         <span>{file.name}</span>
                         <span style={{ color: 'var(--text-muted)', fontSize: '11px' }}>
                           ({(file.size / 1024).toFixed(1)} KB)
@@ -621,31 +803,34 @@ export default function App() {
                 <button
                   type="button"
                   className="btn-primary"
-                  style={{ width: '100%', justifyContent: 'center', marginTop: '10px' }}
+                  style={{ width: '100%', justifyContent: 'center', marginTop: '8px' }}
                   onClick={handleBatchUpload}
                   disabled={isUploading}
                 >
                   <Upload size={16} />
-                  {isUploading ? 'Extracting & Retaining...' : `Upload & Retain into Memory (${selectedFiles.length})`}
+                  {isUploading ? 'Extracting & Retaining into Memory...' : `Upload & Retain (${selectedFiles.length} files)`}
                 </button>
               </div>
             )}
           </div>
 
           {/* Right Column: Quick Single Feedback Form */}
-          <div>
-            <h3 className="section-heading">Quick Single Feedback Entry</h3>
-            <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginBottom: '16px' }}>
-              Store an individual customer feedback item into Hindsight using <code>retain()</code> with metadata tags.
+          <div className="ingest-card-panel">
+            <h3 className="section-heading" style={{ marginBottom: '6px' }}>
+              <Send size={18} color="var(--accent)" />
+              Quick Single Feedback Ingestion
+            </h3>
+            <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginBottom: '18px' }}>
+              Store individual verbatim customer feedback using Hindsight's <code>retain()</code> API.
             </p>
 
             <form onSubmit={handleFeedbackSubmit}>
               <div className="form-group" style={{ marginBottom: '14px' }}>
-                <label className="form-label">Title / Summary</label>
+                <label className="form-label">Feedback Title / Summary</label>
                 <input
                   type="text"
                   className="form-control"
-                  placeholder="e.g. Checkout failed on iOS v2.3"
+                  placeholder="e.g. Checkout failed repeatedly on iOS v2.3"
                   value={feedbackInput.title}
                   onChange={(e) => setFeedbackInput({ ...feedbackInput, title: e.target.value })}
                   required
@@ -653,11 +838,11 @@ export default function App() {
               </div>
 
               <div className="form-group" style={{ marginBottom: '14px' }}>
-                <label className="form-label">Feedback Content</label>
+                <label className="form-label">Verbatim Feedback Content</label>
                 <textarea
                   className="form-control"
                   rows="4"
-                  placeholder="Paste verbatim customer review, support ticket, or Slack message..."
+                  placeholder="Paste verbatim customer review, support ticket description, or user interview note..."
                   value={feedbackInput.content}
                   onChange={(e) => setFeedbackInput({ ...feedbackInput, content: e.target.value })}
                   required
@@ -666,7 +851,7 @@ export default function App() {
 
               <div className="form-grid">
                 <div className="form-group">
-                  <label className="form-label">Source Channel</label>
+                  <label className="form-label">Channel Source</label>
                   <select
                     className="form-control"
                     value={feedbackInput.source}
@@ -682,22 +867,26 @@ export default function App() {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Rating (1 to 5)</label>
-                  <select
-                    className="form-control"
-                    value={feedbackInput.rating}
-                    onChange={(e) => setFeedbackInput({ ...feedbackInput, rating: Number(e.target.value) })}
-                  >
-                    <option value={1}>1 Star</option>
-                    <option value={2}>2 Stars</option>
-                    <option value={3}>3 Stars</option>
-                    <option value={4}>4 Stars</option>
-                    <option value={5}>5 Stars</option>
-                  </select>
+                  <label className="form-label">Customer Rating</label>
+                  <div className="star-rating-selector">
+                    {[1, 2, 3, 4, 5].map((starVal) => (
+                      <button
+                        key={starVal}
+                        type="button"
+                        className={`star-btn ${starVal <= feedbackInput.rating ? 'active' : ''}`}
+                        onClick={() => setFeedbackInput({ ...feedbackInput, rating: starVal })}
+                      >
+                        ★
+                      </button>
+                    ))}
+                    <span style={{ fontSize: '12px', color: 'var(--text-muted)', marginLeft: '6px' }}>
+                      ({feedbackInput.rating}/5)
+                    </span>
+                  </div>
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">App Version</label>
+                  <label className="form-label">App Release Version</label>
                   <input
                     type="text"
                     className="form-control"
@@ -707,8 +896,8 @@ export default function App() {
                 </div>
               </div>
 
-              <button type="submit" className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
-                <Send size={16} /> Retain into Hindsight Memory
+              <button type="submit" className="btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: '10px' }}>
+                <Send size={16} /> Retain into Hindsight Memory Bank
               </button>
             </form>
           </div>
@@ -717,19 +906,37 @@ export default function App() {
 
       {/* TAB 4: WEEKLY PM DIGEST */}
       {activeTab === 'digest' && (
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <div className="digest-container">
+          <div className="digest-banner">
             <div>
-              <h2 style={{ fontSize: '20px', margin: '0 0 4px 0', color: 'var(--text-bold)' }}>Executive Product Feedback Digest</h2>
-              <p style={{ color: 'var(--text-muted)', fontSize: '13px', margin: 0 }}>
-                Synthesized via standing mental models and strict evidence grounding.
+              <h2 style={{ fontSize: '22px', fontWeight: '800', margin: '0 0 6px 0', color: 'var(--text-bold)' }}>
+                Executive Product Intelligence Digest
+              </h2>
+              <p style={{ color: 'var(--text-muted)', fontSize: '13.5px', margin: 0 }}>
+                Synthesized across standing mental models with strict evidentiary grounding.
               </p>
             </div>
 
-            <div style={{ display: 'flex', gap: '10px' }}>
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => {
+                  if (digest) {
+                    const text = `# ${digest.title}\n\nGenerated: ${digest.date_formatted}\nTotal Citations: ${digest.total_sources_cited}\n\n` +
+                      (digest.themes || []).map((t, i) => `## ${i + 1}. ${t.name} (${t.evidence_count} sources)\n\n${t.observation}`).join('\n\n');
+                    copyToClipboard(text, 'digest');
+                  }
+                }}
+              >
+                {copiedDigest ? <Check size={14} color="var(--success-text)" /> : <Copy size={14} />}
+                <span>{copiedDigest ? 'Copied Markdown!' : 'Copy Markdown'}</span>
+              </button>
+
               <a href={`${API_BASE}/digest?format=html`} target="_blank" rel="noreferrer" className="btn-secondary">
                 <Download size={14} /> View HTML Report
               </a>
+
               <a href={`${API_BASE}/digest?format=json`} target="_blank" rel="noreferrer" className="btn-secondary">
                 <FileText size={14} /> View JSON
               </a>
@@ -739,18 +946,22 @@ export default function App() {
           {digest ? (
             <div className="digest-card">
               <h3 className="digest-title">{digest.title}</h3>
-              <p className="digest-meta">
-                Generated: {digest.date_formatted} | Citations Grounded: <strong>{digest.total_sources_cited}</strong>
-              </p>
+              <div className="digest-meta">
+                <span>📅 Generated: <strong>{digest.date_formatted}</strong></span>
+                <span>•</span>
+                <span>🛡️ Total Citations Grounded: <strong>{digest.total_sources_cited}</strong></span>
+                <span>•</span>
+                <span>🧠 Standing Themes: <strong>{digest.themes?.length || 0}</strong></span>
+              </div>
 
               {digest.themes?.map((t, idx) => (
                 <div key={idx} className="digest-theme-item">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <div className="digest-theme-header">
                     <h4 className="digest-theme-title">
                       {idx + 1}. {t.name}
                     </h4>
                     <span className="digest-badge">
-                      {t.evidence_count} Sources
+                      {t.evidence_count} Evidence Citations
                     </span>
                   </div>
                   <div className="digest-theme-observation">
@@ -760,7 +971,7 @@ export default function App() {
               ))}
             </div>
           ) : (
-            <p style={{ color: 'var(--text-muted)' }}>Loading digest...</p>
+            <p style={{ color: 'var(--text-muted)' }}>Loading executive digest...</p>
           )}
         </div>
       )}
