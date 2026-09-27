@@ -1,8 +1,17 @@
 import json
+import sys
 from datetime import datetime
 from pathlib import Path
 import pandas as pd
 import streamlit as st
+
+BASE_DIR = Path(__file__).resolve().parent
+if str(BASE_DIR) not in sys.path:
+    sys.path.insert(0, str(BASE_DIR))
+
+# Ensure UTF-8 output on Windows consoles
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
 
 from src.client import HindsightMemoryClient
 from src.config import get_bank_config, load_banks_config, settings
@@ -16,60 +25,33 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Custom Styling
+# Custom Styling that adapts to both Dark and Light themes
 st.markdown(
     """
     <style>
-    .main-header {
-        font-size: 2.2rem;
-        font-weight: 700;
-        color: #0f172a;
-        margin-bottom: 0.2rem;
+    .status-badge {
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        display: inline-block;
     }
-    .sub-header {
-        color: #475569;
-        font-size: 1.05rem;
-        margin-bottom: 1.5rem;
+    .status-live {
+        background-color: rgba(34, 197, 94, 0.2);
+        color: #16a34a;
+        border: 1px solid rgba(34, 197, 94, 0.4);
     }
-    .metric-card {
-        background-color: #f8fafc;
-        border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        padding: 16px;
-        text-align: center;
-    }
-    .theme-card {
-        background-color: #ffffff;
-        border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        padding: 16px;
-        margin-bottom: 12px;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    .status-offline {
+        background-color: rgba(245, 158, 11, 0.2);
+        color: #d97706;
+        border: 1px solid rgba(245, 158, 11, 0.4);
     }
     .quote-box {
-        background-color: #f1f5f9;
         border-left: 4px solid #3b82f6;
         padding: 10px 14px;
-        margin-top: 8px;
-        margin-bottom: 8px;
+        margin: 8px 0;
         border-radius: 4px;
-        font-size: 0.95rem;
-    }
-    .status-badge-live {
-        background-color: #dcfce7;
-        color: #15803d;
-        padding: 4px 10px;
-        border-radius: 12px;
-        font-size: 0.85rem;
-        font-weight: 600;
-    }
-    .status-badge-fallback {
-        background-color: #fef3c7;
-        color: #b45309;
-        padding: 4px 10px;
-        border-radius: 12px;
-        font-size: 0.85rem;
-        font-weight: 600;
+        background: rgba(59, 130, 246, 0.08);
     }
     </style>
     """,
@@ -99,12 +81,12 @@ bank_cfg = banks[selected_bank_id]
 is_live = client.is_live()
 if is_live:
     st.sidebar.markdown(
-        '<span class="status-badge-live">● Hindsight Server: ONLINE (:8888)</span>',
+        '<span class="status-badge status-live">● Hindsight Server: ONLINE (:8888)</span>',
         unsafe_allow_html=True,
     )
 else:
     st.sidebar.markdown(
-        '<span class="status-badge-fallback">○ Hindsight: LOCAL EMBEDDED</span>',
+        '<span class="status-badge status-offline">○ Hindsight: LOCAL EMBEDDED</span>',
         unsafe_allow_html=True,
     )
     st.sidebar.caption("Run `docker compose up -d` to switch to live Hindsight container.")
@@ -119,24 +101,21 @@ with st.sidebar.expander("Mission & Directives", expanded=False):
         st.markdown(f"- **{d.name}**: {d.content}")
 
 with st.sidebar.expander("Disposition Parameters", expanded=False):
-    st.write(f"• Skepticism: **{bank_cfg.disposition.skepticism}/5** (high)")
-    st.write(f"• Agreeableness: **{bank_cfg.disposition.agreeableness}/5** (low)")
-    st.write(f"• Literalism: **{bank_cfg.disposition.literalism}/5** (strict)")
-    st.write(f"• Empathy: **{bank_cfg.disposition.empathy}/5** (analytical)")
+    st.write(f"• Skepticism: **{bank_cfg.disposition.skepticism}/5** (high skepticism)")
+    st.write(f"• Agreeableness: **{bank_cfg.disposition.agreeableness}/5** (low agreeableness)")
+    st.write(f"• Literalism: **{bank_cfg.disposition.literalism}/5** (strict grounding)")
+    st.write(f"• Empathy: **{bank_cfg.disposition.empathy}/5** (analytical reporting)")
 
 if st.sidebar.button("🔄 Sync Bank & Standing Models", use_container_width=True):
     with st.spinner("Configuring bank in memory engine..."):
         res = client.create_or_update_bank(bank_cfg)
         st.sidebar.success(f"Bank synced: {res.get('status')}")
 
-# Top Header
+# Header
 col_title, col_btn = st.columns([3, 1])
 with col_title:
-    st.markdown('<div class="main-header">User Feedback Synthesizer</div>', unsafe_allow_html=True)
-    st.markdown(
-        f'<div class="sub-header">Living, evidence-backed product intelligence powered by <b>Hindsight</b> memory for <i>{bank_cfg.name}</i></div>',
-        unsafe_allow_html=True,
-    )
+    st.title("User Feedback Synthesizer")
+    st.caption(f"Living, evidence-backed product intelligence powered by Hindsight memory for **{bank_cfg.name}**")
 
 with col_btn:
     st.write("")
@@ -163,7 +142,7 @@ with m_col3:
 with m_col4:
     ratings = [int(m["metadata"].get("rating", 3)) for m in raw_memories if m.get("metadata", {}).get("rating")]
     avg_r = round(sum(ratings) / len(ratings), 1) if ratings else 0.0
-    st.metric("Avg Customer Sentiment", f"{avg_r} ★" if ratings else "N/A")
+    st.metric("Avg Customer Sentiment", f"{avg_r} / 5.0" if ratings else "N/A")
 
 st.markdown("---")
 
@@ -179,8 +158,8 @@ tab_themes, tab_search, tab_ingest, tab_digest = st.tabs([
 # TAB 1: THEMES & DRILL-DOWN
 # -------------------------------------------------------------
 with tab_themes:
-    if not mental_models or all(m.get("evidence_count", 0) == 0 for m in mental_models):
-        st.info("No synthesis findings yet. Click '⚡ Re-Synthesize Themes' or import sample feedback below.")
+    if not mental_models:
+        st.info("No synthesis findings yet. Click below to load sample feedback and run synthesis.")
         if st.button("Load Sample Dataset & Run Initial Synthesis"):
             import_feedback(file_path=settings.data_dir / "sample_feedback.csv", bank_id=selected_bank_id)
             generate_weekly_digest(bank_id=selected_bank_id)
@@ -198,15 +177,15 @@ with tab_themes:
             )
             selected_theme = theme_options[selected_theme_name]
 
-            st.caption(f"Showing details for `{selected_theme['id']}`")
+            st.caption(f"Selected: `{selected_theme['id']}`")
             for t_name, t_obj in theme_options.items():
                 cnt = t_obj.get("evidence_count", 0)
                 st.caption(f"• **{t_name}**: {cnt} citations")
 
         with col_detail:
-            st.subheader(f"Theme Detail: {selected_theme['name']}")
+            st.subheader(f"Theme: {selected_theme['name']}")
             st.markdown(f"**Query**: *\"{selected_theme['query']}\"*")
-            st.markdown(f"**Evidence Count**: `{selected_theme.get('evidence_count', 0)} sources cited`")
+            st.markdown(f"**Evidence Citations**: `{selected_theme.get('evidence_count', 0)} sources cited`")
 
             # Observation text
             st.markdown("### Synthesized Observation")
@@ -215,7 +194,6 @@ with tab_themes:
 
             # Temporal Trend Analysis
             st.markdown("### 📈 Trend & Timeline Indicator")
-            # Build timeline dataframe for this theme
             theme_id_clean = selected_theme["id"].replace("-", "_")
             related_memories = [
                 m for m in raw_memories
@@ -325,21 +303,10 @@ with tab_search:
                 title = meta.get("title", "")
                 date_str = (r.occurred_start or "")[:10]
 
-                st.markdown(
-                    f"""
-                    <div class="theme-card">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <strong>#{idx}. {title or r.text[:50]}</strong>
-                            <span>{'★' * int(rating) if rating.isdigit() else ''} ({rating}/5)</span>
-                        </div>
-                        <p style="margin-top: 8px; color: #1e293b;">{r.text}</p>
-                        <div style="font-size: 0.85rem; color: #64748b;">
-                            👤 <b>{user}</b> | 📱 {source} | 🏷️ Version: <code>{ver}</code> | 📅 {date_str}
-                        </div>
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
+                with st.container(border=True):
+                    st.markdown(f"**#{idx}. {title or r.text[:60]}** — *Rating: {rating}/5*")
+                    st.write(f'"{r.text}"')
+                    st.caption(f"👤 {user} | 📱 {source} | 🏷️ Version: `{ver}` | 📅 {date_str}")
 
 # -------------------------------------------------------------
 # TAB 3: INGESTION PIPELINE

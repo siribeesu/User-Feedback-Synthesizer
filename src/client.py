@@ -553,7 +553,7 @@ class HindsightMemoryClient:
             rating = m.metadata.get("rating", "N/A") if m.metadata else "N/A"
             ver = m.metadata.get("app_version", "N/A") if m.metadata else "N/A"
             quotes_md.append(
-                f"- [Source {idx}]: \"{m.text.strip()}\" — *{user}, {source} ({ver}), Rating: {rating}★*"
+                f"- [Source {idx}]: \"{m.text.strip()}\" — *{user}, {source} ({ver}), Rating: {rating}/5*"
             )
 
         summary = (
