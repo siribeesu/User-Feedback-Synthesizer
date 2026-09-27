@@ -1,0 +1,32 @@
+version: "3.8"
+
+services:
+  hindsight:
+    image: ${HINDSIGHT_IMAGE:-ghcr.io/vectorize-io/hindsight:latest}
+    container_name: hindsight-memory
+    restart: unless-stopped
+    shm_size: "1gb"
+    ports:
+      - "8888:8888" # Hindsight API
+      - "9999:9999" # Control Plane UI
+    environment:
+      # LLM Provider configuration (openai, groq, anthropic, gemini, etc.)
+      # Docs recommend Groq gpt-oss-20b or OpenAI gpt-4o-mini
+      - HINDSIGHT_API_LLM_PROVIDER=${HINDSIGHT_API_LLM_PROVIDER:-openai}
+      - HINDSIGHT_API_LLM_API_KEY=${HINDSIGHT_API_LLM_API_KEY:-}
+      - HINDSIGHT_API_LLM_MODEL=${HINDSIGHT_API_LLM_MODEL:-gpt-4o-mini}
+      - HINDSIGHT_API_WORKER_ID=${HINDSIGHT_API_WORKER_ID:-feedback-synthesizer-worker}
+      - HINDSIGHT_API_PORT=8888
+      - HINDSIGHT_API_UI_PORT=9999
+    volumes:
+      - hindsight-data:/home/hindsight/.pg0
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8888/v1/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+volumes:
+  hindsight-data:
+    driver: local
