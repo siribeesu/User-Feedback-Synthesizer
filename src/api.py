@@ -4,7 +4,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 from fastapi import FastAPI, File, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from src.client import HindsightMemoryClient
@@ -26,6 +27,10 @@ app.add_middleware(
 )
 
 client = HindsightMemoryClient()
+
+DIST_DIR = settings.config_file.parent.parent / "frontend" / "dist"
+if (DIST_DIR / "assets").exists():
+    app.mount("/assets", StaticFiles(directory=str(DIST_DIR / "assets")), name="assets")
 
 
 class SingleFeedbackPayload(BaseModel):
@@ -53,9 +58,12 @@ class SearchQuery(BaseModel):
     limit: int = 20
 
 
-@app.get("/", response_class=HTMLResponse)
+@app.get("/")
 def get_dashboard_ui():
-    """Serves a standalone, zero-dependency interactive Web Dashboard."""
+    """Serves production React dashboard if built, else fallback HTML."""
+    index_file = DIST_DIR / "index.html"
+    if index_file.exists():
+        return FileResponse(index_file)
     html_content = """<!DOCTYPE html>
 <html lang="en">
 <head>

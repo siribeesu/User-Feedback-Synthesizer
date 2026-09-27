@@ -2,7 +2,7 @@
   "title": "Product Feedback Synthesis Digest \u2014 Mobile App",
   "bank_id": "mobile-app-feedback",
   "product": "Mobile App",
-  "generated_at": "2026-09-27T14:03:47.953060Z",
+  "generated_at": "2026-09-27T14:05:38.327577Z",
   "date_formatted": "September 27, 2026",
   "total_sources_cited": 250,
   "themes_count": 5,
@@ -70,7 +70,7 @@
           "context": "Source: Google Play | User: Quinn Bailey (Pro Tier) | Rating: 5 | Version: v2.2"
         }
       ],
-      "last_refreshed": "2026-09-27T14:03:47.929136Z"
+      "last_refreshed": "2026-09-27T14:05:38.264248Z"
     },
     {
       "id": "pricing-complaints",
@@ -135,7 +135,7 @@
           "context": "Source: NPS Survey | User: Tara Connelly (Growth) | Rating: 1 | Version: v2.3"
         }
       ],
-      "last_refreshed": "2026-09-27T14:03:47.937594Z"
+      "last_refreshed": "2026-09-27T14:05:38.279002Z"
     },
     {
       "id": "feature-requests-exports",
@@ -200,7 +200,7 @@
           "context": "Source: Zendesk | User: David Kim (Enterprise) | Rating: 1 | Version: v2.3"
         }
       ],
-      "last_refreshed": "2026-09-27T14:03:47.942595Z"
+      "last_refreshed": "2026-09-27T14:05:38.292295Z"
     },
     {
       "id": "release-v23-stability",
@@ -266,7 +266,7 @@
           "context": "Source: Intercom | User: Elena Rostova (Growth) | Rating: 1 | Version: v2.3"
         }
       ],
-      "last_refreshed": "2026-09-27T14:03:47.946633Z"
+      "last_refreshed": "2026-09-27T14:05:38.306572Z"
     },
     {
       "id": "churn-signals",
@@ -331,7 +331,7 @@
           "context": "Source: Google Play | User: Olivia Chen (Pro Tier) | Rating: 1 | Version: v2.3"
         }
       ],
-      "last_refreshed": "2026-09-27T14:03:47.950062Z"
+      "last_refreshed": "2026-09-27T14:05:38.318577Z"
     }
   ]
 }

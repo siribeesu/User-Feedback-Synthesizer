@@ -43,9 +43,9 @@ The system is built upon Hindsight's core biomimetic memory primitives: **Retain
               ▼                              ▼
    ┌────────────────────────────────────────────────────────┐
    │ Output Surfaces                                        │
-   │ 1. Interactive Web Dashboard (Streamlit / app.py)      │
+   │ 1. Interactive React Dashboard (:8000)                 │
    │ 2. Executive Weekly PM Digest (Markdown / HTML)        │
-   │ 3. REST API (FastAPI / src/api.py)                     │
+   │ 3. REST API (FastAPI / :8000)                          │
    └────────────────────────────────────────────────────────┘
 ```
 
@@ -118,21 +118,22 @@ Artifacts generated:
 - `output/digest.html`: Beautiful executive HTML report ready for emailing to product leadership.
 - `output/digest.json`: Structured JSON for BI/analytics integration.
 
-### 6. Launch the Interactive Dashboard
-```bash
-.\.venv\Scripts\streamlit run app.py
-```
-Open **`http://localhost:8501`** to explore:
-- **Themes & Drill-down**: Click any theme to inspect synthesized observations, temporal trend charts, and verbatim source quotes.
-- **Search Feedback (Recall)**: Ad-hoc search bar with rating, source, and date range filters.
-- **Ingestion Pipeline**: Upload new CSV/JSON files or submit feedback on the fly.
-- **Weekly PM Digest**: Live report preview and one-click `.md` / `.html` downloads.
-
-### 7. Run the FastAPI REST Service
+### 6. Launch the Application (React Frontend + API)
 ```bash
 .\.venv\Scripts\uvicorn src.api:app --reload --port 8000
 ```
-Swagger UI available at: **`http://localhost:8000/docs`**
+Open **`http://localhost:8000`** in your browser to explore:
+- **Interactive React Dashboard**: Theme cards, evidence citations, observation drilldown, verbatim customer quotes with attribution.
+- **Search Feedback (Recall)**: Ad-hoc search with channel and rating filters.
+- **Ingestion Pipeline**: Submit single feedback or trigger batch ingestion.
+- **Weekly PM Digest**: Live executive report preview and `.md` / `.html` downloads.
+- **Interactive API Docs**: Swagger UI available at **`http://localhost:8000/docs`**.
+
+*(Optional) React Frontend Development Mode:*
+```bash
+cd frontend
+npm run dev # Runs Vite dev server at http://localhost:5173
+```
 
 ---
 
@@ -190,11 +191,12 @@ User Feedback Synthesizer/
 │   ├── __init__.py
 │   ├── config.py               # Pydantic configuration loader
 │   ├── client.py               # Hindsight client wrapper (Live + Local engine)
-│   └── api.py                  # FastAPI REST API
+├── frontend/                   # React frontend (Vite + Lucide)
+│   ├── src/                    # React components (App.jsx, App.css)
+│   └── dist/                   # Production React build served by FastAPI
 ├── setup_bank.py               # Bank & directive setup CLI
 ├── importer.py                 # Feedback ingestion pipeline CLI
 ├── synthesize.py               # Synthesis loop & digest generator CLI
-├── app.py                      # Interactive Streamlit dashboard
 └── tests/
     └── test_synthesizer.py     # End-to-end test suite
 ```

@@ -4,6 +4,10 @@ venv/
 ENV/
 env/
 
+# Node dependencies
+frontend/node_modules/
+node_modules/
+
 # Python cache & build artifacts
 __pycache__/
 *.py[cod]
