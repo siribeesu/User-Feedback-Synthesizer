@@ -15,10 +15,16 @@ from src.api import app
 
 
 @pytest.fixture(scope="module")
-def client():
-    c = HindsightMemoryClient()
+def client(tmp_path_factory):
+    from src.api import client as api_client
+    temp_file = tmp_path_factory.mktemp("test_storage") / "test_bank.json"
+    
+    orig_file = api_client.storage_file
+    api_client.storage_file = temp_file
+    api_client._ensure_storage()
+
     bank_cfg = get_bank_config("mobile-app-feedback")
-    c.create_or_update_bank(bank_cfg)
+    api_client.create_or_update_bank(bank_cfg)
     test_items = [
         {
             "id": "FB-TEST-001",
@@ -39,8 +45,11 @@ def client():
             "segment": "Pro",
         },
     ]
-    c.retain_batch(bank_id="mobile-app-feedback", items=test_items)
-    return c
+    api_client.retain_batch(bank_id="mobile-app-feedback", items=test_items)
+    
+    yield api_client
+
+    api_client.storage_file = orig_file
 
 
 @pytest.fixture(scope="module")
