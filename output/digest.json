@@ -2,7 +2,7 @@
   "title": "Product Feedback Synthesis Digest \u2014 Mobile App",
   "bank_id": "mobile-app-feedback",
   "product": "Mobile App",
-  "generated_at": "2026-09-27T14:05:38.327577Z",
+  "generated_at": "2026-09-27T18:31:26.585567Z",
   "date_formatted": "September 27, 2026",
   "total_sources_cited": 250,
   "themes_count": 5,
@@ -17,7 +17,7 @@
         "ux"
       ],
       "evidence_count": 50,
-      "observation": "### Synthesized Finding (Grounded in 50 Verified Source Records)\n\n- **Confidence & Grounding**: Strict directive compliance \u2014 zero invented claims.\n- **Evidence Volume**: 50 independent feedback submissions cited.\n- **Average Sentiment**: 2.2 / 5.0.\n- **Source Distribution**: NPS Survey: 4, App Store: 18, Intercom: 9, Zendesk: 8, Google Play: 9, Discord: 2.\n- **Affected Versions**: v2.3: 28, v2.1: 9, v2.2: 13.\n\n**TEMPORAL SHIFT DETECTED**: Sentiment flipped sharply from positive in v2.2 (avg rating 3.4/5 across 13 sources) to severe dissatisfaction in v2.3 (avg rating 1.5/5 across 28 sources). The degradation coincides directly with the release of v2.3.\n\n#### Representative Source Evidence:\n- [Source 1]: \"Just signed up. When you first enter the dashboard, it is completely blank with no dummy data, no checklist, and no explanation of what to do first. Took me 30 minutes just to figure out how to create a project.\" \u2014 *Hannah Abbott, NPS Survey (v2.3), Rating: 3/5*\n- [Source 2]: \"Waited over 10 minutes for the account activation email to arrive. Almost gave up and closed the browser.\" \u2014 *Elena Rostova, App Store (v2.1), Rating: 1/5*\n- [Source 3]: \"Waited over 10 minutes for the account activation email to arrive. Almost gave up and closed the browser.\" \u2014 *Elena Rostova, Intercom (v2.1), Rating: 1/5*\n- [Source 4]: \"Waited over 17 minutes for the account activation email to arrive. Almost gave up and closed the browser.\" \u2014 *Olivia Chen, App Store (v2.2), Rating: 1/5*",
+      "observation": "### Synthesized Finding (Grounded in 50 Verified Source Records)\n\n- **Confidence & Grounding**: Strict directive compliance \u2014 zero invented claims.\n- **Evidence Volume**: 50 independent feedback submissions cited.\n- **Average Sentiment**: 2.3 / 5.0.\n- **Source Distribution**: NPS Survey: 4, App Store: 18, Intercom: 9, Zendesk: 8, Google Play: 9, Discord: 2.\n- **Affected Versions**: v2.3: 27, v2.1: 9, v2.2: 13, unknown: 1.\n\n**TEMPORAL SHIFT DETECTED**: Sentiment flipped sharply from positive in v2.2 (avg rating 3.4/5 across 13 sources) to severe dissatisfaction in v2.3 (avg rating 1.6/5 across 27 sources). The degradation coincides directly with the release of v2.3.\n\n#### Representative Source Evidence:\n- [Source 1]: \"Just signed up. When you first enter the dashboard, it is completely blank with no dummy data, no checklist, and no explanation of what to do first. Took me 30 minutes just to figure out how to create a project.\" \u2014 *Hannah Abbott, NPS Survey (v2.3), Rating: 3/5*\n- [Source 2]: \"Waited over 10 minutes for the account activation email to arrive. Almost gave up and closed the browser.\" \u2014 *Elena Rostova, App Store (v2.1), Rating: 1/5*\n- [Source 3]: \"Waited over 10 minutes for the account activation email to arrive. Almost gave up and closed the browser.\" \u2014 *Elena Rostova, Intercom (v2.1), Rating: 1/5*\n- [Source 4]: \"Waited over 17 minutes for the account activation email to arrive. Almost gave up and closed the browser.\" \u2014 *Olivia Chen, App Store (v2.2), Rating: 1/5*",
       "evidence_facts": [
         {
           "id": "FB-0005",
@@ -70,7 +70,7 @@
           "context": "Source: Google Play | User: Quinn Bailey (Pro Tier) | Rating: 5 | Version: v2.2"
         }
       ],
-      "last_refreshed": "2026-09-27T14:05:38.264248Z"
+      "last_refreshed": "2026-09-27T18:31:26.512744Z"
     },
     {
       "id": "pricing-complaints",
@@ -135,7 +135,7 @@
           "context": "Source: NPS Survey | User: Tara Connelly (Growth) | Rating: 1 | Version: v2.3"
         }
       ],
-      "last_refreshed": "2026-09-27T14:05:38.279002Z"
+      "last_refreshed": "2026-09-27T18:31:26.536350Z"
     },
     {
       "id": "feature-requests-exports",
@@ -200,7 +200,7 @@
           "context": "Source: Zendesk | User: David Kim (Enterprise) | Rating: 1 | Version: v2.3"
         }
       ],
-      "last_refreshed": "2026-09-27T14:05:38.292295Z"
+      "last_refreshed": "2026-09-27T18:31:26.544526Z"
     },
     {
       "id": "release-v23-stability",
@@ -213,7 +213,7 @@
         "checkout"
       ],
       "evidence_count": 50,
-      "observation": "### Synthesized Finding (Grounded in 50 Verified Source Records)\n\n- **Confidence & Grounding**: Strict directive compliance \u2014 zero invented claims.\n- **Evidence Volume**: 50 independent feedback submissions cited.\n- **Average Sentiment**: 1.9 / 5.0.\n- **Source Distribution**: NPS Survey: 7, Zendesk: 9, Google Play: 8, App Store: 14, Discord: 4, Intercom: 8.\n- **Affected Versions**: v2.3: 37, v2.2: 8, v2.1: 5.\n\n**TEMPORAL SHIFT DETECTED**: Sentiment flipped sharply from positive in v2.2 (avg rating 3.5/5 across 8 sources) to severe dissatisfaction in v2.3 (avg rating 1.5/5 across 37 sources). The degradation coincides directly with the release of v2.3.\n\n#### Representative Source Evidence:\n- [Source 1]: \"Just signed up. When you first enter the dashboard, it is completely blank with no dummy data, no checklist, and no explanation of what to do first. Took me 30 minutes just to figure out how to create a project.\" \u2014 *Hannah Abbott, NPS Survey (v2.3), Rating: 3/5*\n- [Source 2]: \"Our procurement department has officially initiated termination of our 25-seat enterprise agreement. The downtime and checkout crashes on v2.3 without timely rollback showed our business operations are at risk.\" \u2014 *David Kim, Zendesk (v2.3), Rating: 1/5*\n- [Source 3]: \"After 2 weeks of unresolved pricing disputes and unresponsive support, our team spent the weekend migrating our workflow to Competitor X. Bye.\" \u2014 *Nathaniel Drake, NPS Survey (v2.3), Rating: 1/5*\n- [Source 4]: \"When upgrading to Pro, the confirmation button didn't give any visual loading feedback. I clicked twice, and checking Stripe statement I was billed twice for the same subscription.\" \u2014 *Olivia Chen, Google Play (v2.3), Rating: 1/5*",
+      "observation": "### Synthesized Finding (Grounded in 50 Verified Source Records)\n\n- **Confidence & Grounding**: Strict directive compliance \u2014 zero invented claims.\n- **Evidence Volume**: 50 independent feedback submissions cited.\n- **Average Sentiment**: 1.9 / 5.0.\n- **Source Distribution**: NPS Survey: 7, Zendesk: 9, Google Play: 7, App Store: 14, Discord: 4, Intercom: 8, Interview Transcript: 1.\n- **Affected Versions**: v2.3: 38, v2.2: 8, v2.1: 4.\n\n**TEMPORAL SHIFT DETECTED**: Sentiment flipped sharply from positive in v2.2 (avg rating 3.5/5 across 8 sources) to severe dissatisfaction in v2.3 (avg rating 1.5/5 across 38 sources). The degradation coincides directly with the release of v2.3.\n\n#### Representative Source Evidence:\n- [Source 1]: \"Just signed up. When you first enter the dashboard, it is completely blank with no dummy data, no checklist, and no explanation of what to do first. Took me 30 minutes just to figure out how to create a project.\" \u2014 *Hannah Abbott, NPS Survey (v2.3), Rating: 3/5*\n- [Source 2]: \"Our procurement department has officially initiated termination of our 25-seat enterprise agreement. The downtime and checkout crashes on v2.3 without timely rollback showed our business operations are at risk.\" \u2014 *David Kim, Zendesk (v2.3), Rating: 1/5*\n- [Source 3]: \"After 2 weeks of unresolved pricing disputes and unresponsive support, our team spent the weekend migrating our workflow to Competitor X. Bye.\" \u2014 *Nathaniel Drake, NPS Survey (v2.3), Rating: 1/5*\n- [Source 4]: \"When upgrading to Pro, the confirmation button didn't give any visual loading feedback. I clicked twice, and checking Stripe statement I was billed twice for the same subscription.\" \u2014 *Olivia Chen, Google Play (v2.3), Rating: 1/5*",
       "evidence_facts": [
         {
           "id": "FB-0005",
@@ -266,7 +266,7 @@
           "context": "Source: Intercom | User: Elena Rostova (Growth) | Rating: 1 | Version: v2.3"
         }
       ],
-      "last_refreshed": "2026-09-27T14:05:38.306572Z"
+      "last_refreshed": "2026-09-27T18:31:26.560355Z"
     },
     {
       "id": "churn-signals",
@@ -331,7 +331,7 @@
           "context": "Source: Google Play | User: Olivia Chen (Pro Tier) | Rating: 1 | Version: v2.3"
         }
       ],
-      "last_refreshed": "2026-09-27T14:05:38.318577Z"
+      "last_refreshed": "2026-09-27T18:31:26.577257Z"
     }
   ]
 }
