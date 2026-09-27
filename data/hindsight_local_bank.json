@@ -1606,7 +1606,7 @@
       {
         "id": "FB-TEST-001",
         "text": "The application crashed when pressing payment submit on v2.3.",
-        "timestamp": "2026-09-27T14:25:06.867760",
+        "timestamp": "2026-09-27T18:29:45.774249",
         "metadata": {
           "source": "Zendesk",
           "user_id": "unknown",
@@ -1832,9 +1832,9 @@
           "crashes",
           "checkout"
         ],
-        "observation": "### Synthesized Finding (Grounded in 50 Verified Source Records)\n\n- **Confidence & Grounding**: Strict directive compliance \u2014 zero invented claims.\n- **Evidence Volume**: 50 independent feedback submissions cited.\n- **Average Sentiment**: 1.9 / 5.0.\n- **Source Distribution**: NPS Survey: 7, Zendesk: 9, Google Play: 8, App Store: 14, Discord: 4, Intercom: 8.\n- **Affected Versions**: v2.3: 37, v2.2: 8, v2.1: 5.\n\n**TEMPORAL SHIFT DETECTED**: Sentiment flipped sharply from positive in v2.2 (avg rating 3.5/5 across 8 sources) to severe dissatisfaction in v2.3 (avg rating 1.5/5 across 37 sources). The degradation coincides directly with the release of v2.3.\n\n#### Representative Source Evidence:\n- [Source 1]: \"Just signed up. When you first enter the dashboard, it is completely blank with no dummy data, no checklist, and no explanation of what to do first. Took me 30 minutes just to figure out how to create a project.\" \u2014 *Hannah Abbott, NPS Survey (v2.3), Rating: 3/5*\n- [Source 2]: \"Our procurement department has officially initiated termination of our 25-seat enterprise agreement. The downtime and checkout crashes on v2.3 without timely rollback showed our business operations are at risk.\" \u2014 *David Kim, Zendesk (v2.3), Rating: 1/5*\n- [Source 3]: \"After 2 weeks of unresolved pricing disputes and unresponsive support, our team spent the weekend migrating our workflow to Competitor X. Bye.\" \u2014 *Nathaniel Drake, NPS Survey (v2.3), Rating: 1/5*\n- [Source 4]: \"When upgrading to Pro, the confirmation button didn't give any visual loading feedback. I clicked twice, and checking Stripe statement I was billed twice for the same subscription.\" \u2014 *Olivia Chen, Google Play (v2.3), Rating: 1/5*",
+        "observation": "### Synthesized Finding (Grounded in 50 Verified Source Records)\n\n- **Confidence & Grounding**: Strict directive compliance \u2014 zero invented claims.\n- **Evidence Volume**: 50 independent feedback submissions cited.\n- **Average Sentiment**: 1.9 / 5.0.\n- **Source Distribution**: NPS Survey: 7, Zendesk: 9, Google Play: 7, App Store: 14, Discord: 4, Intercom: 8, Interview Transcript: 1.\n- **Affected Versions**: v2.3: 38, v2.2: 8, v2.1: 4.\n\n**TEMPORAL SHIFT DETECTED**: Sentiment flipped sharply from positive in v2.2 (avg rating 3.5/5 across 8 sources) to severe dissatisfaction in v2.3 (avg rating 1.5/5 across 38 sources). The degradation coincides directly with the release of v2.3.\n\n#### Representative Source Evidence:\n- [Source 1]: \"Just signed up. When you first enter the dashboard, it is completely blank with no dummy data, no checklist, and no explanation of what to do first. Took me 30 minutes just to figure out how to create a project.\" \u2014 *Hannah Abbott, NPS Survey (v2.3), Rating: 3/5*\n- [Source 2]: \"Our procurement department has officially initiated termination of our 25-seat enterprise agreement. The downtime and checkout crashes on v2.3 without timely rollback showed our business operations are at risk.\" \u2014 *David Kim, Zendesk (v2.3), Rating: 1/5*\n- [Source 3]: \"After 2 weeks of unresolved pricing disputes and unresponsive support, our team spent the weekend migrating our workflow to Competitor X. Bye.\" \u2014 *Nathaniel Drake, NPS Survey (v2.3), Rating: 1/5*\n- [Source 4]: \"When upgrading to Pro, the confirmation button didn't give any visual loading feedback. I clicked twice, and checking Stripe statement I was billed twice for the same subscription.\" \u2014 *Olivia Chen, Google Play (v2.3), Rating: 1/5*",
         "evidence_count": 50,
-        "last_refreshed": "2026-09-27T14:25:06.884419Z",
+        "last_refreshed": "2026-09-27T18:29:45.790840Z",
         "evidence_facts": [
           {
             "id": "FB-0005",
@@ -2041,6 +2041,16 @@
         },
         {
           "timestamp": "2026-09-27T14:25:06.884419Z",
+          "evidence_count": 50,
+          "observation_snippet": "### Synthesized Finding (Grounded in 50 Verified Source Records)\n\n- **Confidence & Grounding**: Strict directive compliance \u2014 zero invented claims.\n- **Evidence Volume**: 50 independent feedback submissions cited.\n- **Average Sentiment**: 1.9 / 5.0.\n- **Source Distribution**: NPS Survey: 7, Zendesk:..."
+        },
+        {
+          "timestamp": "2026-09-27T18:25:55.919416Z",
+          "evidence_count": 50,
+          "observation_snippet": "### Synthesized Finding (Grounded in 50 Verified Source Records)\n\n- **Confidence & Grounding**: Strict directive compliance \u2014 zero invented claims.\n- **Evidence Volume**: 50 independent feedback submissions cited.\n- **Average Sentiment**: 1.9 / 5.0.\n- **Source Distribution**: NPS Survey: 7, Zendesk:..."
+        },
+        {
+          "timestamp": "2026-09-27T18:29:45.790840Z",
           "evidence_count": 50,
           "observation_snippet": "### Synthesized Finding (Grounded in 50 Verified Source Records)\n\n- **Confidence & Grounding**: Strict directive compliance \u2014 zero invented claims.\n- **Evidence Volume**: 50 independent feedback submissions cited.\n- **Average Sentiment**: 1.9 / 5.0.\n- **Source Distribution**: NPS Survey: 7, Zendesk:..."
         }

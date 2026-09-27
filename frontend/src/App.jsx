@@ -19,13 +19,18 @@ import {
   FileArchive,
   Trash2,
   CheckCircle2,
-  UploadCloud
+  UploadCloud,
+  Sun,
+  Moon
 } from 'lucide-react';
 import './App.css';
 
 const API_BASE = ''; // Relative path works for both proxy and FastAPI hosted static
 
 export default function App() {
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem('ufs_theme') || 'dark';
+  });
   const [activeTab, setActiveTab] = useState('themes');
   const [health, setHealth] = useState(null);
   const [themes, setThemes] = useState([]);
@@ -52,6 +57,16 @@ export default function App() {
     app_version: 'v2.3'
   });
   const [notification, setNotification] = useState('');
+
+  // Synchronize theme with DOM and localStorage
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('ufs_theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  };
 
   // Initial load
   useEffect(() => {
@@ -250,6 +265,16 @@ export default function App() {
         </div>
 
         <div className="header-controls">
+          <button
+            type="button"
+            className="theme-toggle-btn"
+            onClick={toggleTheme}
+            title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
+          >
+            {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
+            <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+          </button>
+
           {health?.hindsight_backend === 'online' ? (
             <span className="badge-live">● Hindsight Server: ONLINE (:8888)</span>
           ) : (
@@ -268,17 +293,7 @@ export default function App() {
       </header>
 
       {notification && (
-        <div style={{
-          background: 'rgba(59, 130, 246, 0.2)',
-          border: '1px solid #3b82f6',
-          color: '#93c5fd',
-          padding: '12px 16px',
-          borderRadius: '8px',
-          marginBottom: '20px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px'
-        }}>
+        <div className="notification-banner">
           <Sparkles size={16} />
           {notification}
         </div>
@@ -366,7 +381,7 @@ export default function App() {
       {activeTab === 'themes' && (
         <div className="theme-split">
           <div className="theme-list">
-            <h3 style={{ fontSize: '15px', color: '#94a3b8', margin: '0 0 4px 0' }}>Standing Themes</h3>
+            <h3 style={{ fontSize: '15px', color: 'var(--text-muted)', margin: '0 0 4px 0' }}>Standing Themes</h3>
             {themes.map((t) => (
               <div
                 key={t.id}
@@ -388,9 +403,9 @@ export default function App() {
                 <div className="theme-detail-header">
                   <h2 className="theme-detail-title">{themeDetail.name}</h2>
                   <p className="theme-detail-query">Query: "{themeDetail.query}"</p>
-                  <div style={{ marginTop: '10px', fontSize: '13px', color: '#94a3b8' }}>
+                  <div style={{ marginTop: '10px', fontSize: '13px', color: 'var(--text-muted)' }}>
                     Confidence & Grounding:{' '}
-                    <span style={{ color: '#4ade80', fontWeight: '600' }}>
+                    <span style={{ color: 'var(--success-text)', fontWeight: '600' }}>
                       Strict Directive Enforced ({themeDetail.evidence_count} Sources)
                     </span>
                   </div>
@@ -411,11 +426,11 @@ export default function App() {
                     ))}
                   </div>
                 ) : (
-                  <p style={{ color: '#94a3b8' }}>No quotes cited.</p>
+                  <p style={{ color: 'var(--text-muted)' }}>No quotes cited.</p>
                 )}
               </div>
             ) : (
-              <p style={{ color: '#94a3b8' }}>Select a theme from the left to view details.</p>
+              <p style={{ color: 'var(--text-muted)' }}>Select a theme from the left to view details.</p>
             )}
           </div>
         </div>
@@ -502,7 +517,7 @@ export default function App() {
           {/* Left Column: Drag & Drop Archives & Folders */}
           <div>
             <h3 className="section-heading">Batch Archive & Folder Upload</h3>
-            <p style={{ color: '#94a3b8', fontSize: '13px', marginBottom: '16px' }}>
+            <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginBottom: '16px' }}>
               Drag & drop customer support exports (<strong>.zip</strong>), interview transcripts (<strong>.txt, .md</strong>), or feedback dumps (<strong>.csv, .json</strong>).
             </p>
 
@@ -516,10 +531,10 @@ export default function App() {
               <div className="drop-zone-icon">
                 <UploadCloud size={24} />
               </div>
-              <div style={{ fontWeight: '600', color: '#fff', fontSize: '14px' }}>
+              <div style={{ fontWeight: '600', color: 'var(--text-bold)', fontSize: '14px' }}>
                 Drop .zip archives, folders, or CSV/JSON files here
               </div>
-              <div style={{ color: '#94a3b8', fontSize: '12px' }}>
+              <div style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
                 Auto-extracts nested tickets, transcripts, and reviews
               </div>
 
@@ -570,12 +585,12 @@ export default function App() {
             {selectedFiles.length > 0 && (
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '14px' }}>
-                  <span style={{ fontSize: '13px', color: '#94a3b8' }}>
+                  <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
                     Staged Files (<strong>{selectedFiles.length}</strong>)
                   </span>
                   <button
                     type="button"
-                    style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '12px', cursor: 'pointer' }}
+                    style={{ background: 'none', border: 'none', color: 'var(--danger)', fontSize: '12px', cursor: 'pointer' }}
                     onClick={() => setSelectedFiles([])}
                   >
                     Clear All
@@ -588,7 +603,7 @@ export default function App() {
                       <div className="file-preview-name">
                         {file.name.endsWith('.zip') ? <FileArchive size={16} color="#fbbf24" /> : <FileText size={16} color="#60a5fa" />}
                         <span>{file.name}</span>
-                        <span style={{ color: '#64748b', fontSize: '11px' }}>
+                        <span style={{ color: 'var(--text-muted)', fontSize: '11px' }}>
                           ({(file.size / 1024).toFixed(1)} KB)
                         </span>
                       </div>
@@ -620,7 +635,7 @@ export default function App() {
           {/* Right Column: Quick Single Feedback Form */}
           <div>
             <h3 className="section-heading">Quick Single Feedback Entry</h3>
-            <p style={{ color: '#94a3b8', fontSize: '13px', marginBottom: '16px' }}>
+            <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginBottom: '16px' }}>
               Store an individual customer feedback item into Hindsight using <code>retain()</code> with metadata tags.
             </p>
 
@@ -705,8 +720,8 @@ export default function App() {
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
             <div>
-              <h2 style={{ fontSize: '20px', margin: '0 0 4px 0' }}>Executive Product Feedback Digest</h2>
-              <p style={{ color: '#94a3b8', fontSize: '13px', margin: 0 }}>
+              <h2 style={{ fontSize: '20px', margin: '0 0 4px 0', color: 'var(--text-bold)' }}>Executive Product Feedback Digest</h2>
+              <p style={{ color: 'var(--text-muted)', fontSize: '13px', margin: 0 }}>
                 Synthesized via standing mental models and strict evidence grounding.
               </p>
             </div>
@@ -722,30 +737,30 @@ export default function App() {
           </div>
 
           {digest ? (
-            <div style={{ background: '#151c2e', border: '1px solid #222f47', borderRadius: '10px', padding: '24px' }}>
-              <h3 style={{ fontSize: '18px', color: '#fff', marginBottom: '8px' }}>{digest.title}</h3>
-              <p style={{ color: '#94a3b8', fontSize: '13px', marginBottom: '24px' }}>
+            <div className="digest-card">
+              <h3 className="digest-title">{digest.title}</h3>
+              <p className="digest-meta">
                 Generated: {digest.date_formatted} | Citations Grounded: <strong>{digest.total_sources_cited}</strong>
               </p>
 
               {digest.themes?.map((t, idx) => (
-                <div key={idx} style={{ borderTop: '1px solid #222f47', paddingTop: '18px', marginTop: '18px' }}>
+                <div key={idx} className="digest-theme-item">
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                    <h4 style={{ fontSize: '16px', color: '#3b82f6', margin: 0 }}>
+                    <h4 className="digest-theme-title">
                       {idx + 1}. {t.name}
                     </h4>
-                    <span style={{ fontSize: '12px', background: 'rgba(59, 130, 246, 0.15)', color: '#60a5fa', padding: '2px 8px', borderRadius: '10px' }}>
+                    <span className="digest-badge">
                       {t.evidence_count} Sources
                     </span>
                   </div>
-                  <div style={{ fontSize: '13.5px', color: '#cbd5e1', whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>
+                  <div className="digest-theme-observation">
                     {t.observation}
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <p style={{ color: '#94a3b8' }}>Loading digest...</p>
+            <p style={{ color: 'var(--text-muted)' }}>Loading digest...</p>
           )}
         </div>
       )}
