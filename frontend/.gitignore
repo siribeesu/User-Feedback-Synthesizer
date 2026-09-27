@@ -8,7 +8,7 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
-dist
+# dist included for zero-setup deployment
 dist-ssr
 *.local
 
