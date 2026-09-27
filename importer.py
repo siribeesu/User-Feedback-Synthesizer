@@ -16,15 +16,74 @@ from src.client import HindsightMemoryClient
 from src.config import settings
 
 
+import io
+import zipfile
+
+
 def load_feedback_file(file_path: Path) -> List[Dict[str, Any]]:
     if not file_path.exists():
         raise FileNotFoundError(f"Feedback file not found: {file_path}")
 
-    ext = file_path.suffix.lower()
     items: List[Dict[str, Any]] = []
 
-    if ext == ".json":
-        with open(file_path, "r", encoding="utf-8") as f:
+    # If it is a directory / folder
+    if file_path.is_dir():
+        for sub_file in file_path.rglob("*"):
+            if sub_file.is_file() and not sub_file.name.startswith("."):
+                try:
+                    items.extend(load_feedback_file(sub_file))
+                except Exception:
+                    continue
+        return items
+
+    ext = file_path.suffix.lower()
+
+    if ext == ".zip":
+        with zipfile.ZipFile(file_path, "r") as z:
+            for member in z.infolist():
+                if member.is_dir() or member.filename.startswith("__MACOSX") or Path(member.filename).name.startswith("."):
+                    continue
+                member_ext = Path(member.filename).suffix.lower()
+                try:
+                    with z.open(member) as f:
+                        raw_bytes = f.read()
+                        text_content = raw_bytes.decode("utf-8", errors="replace")
+
+                        if member_ext == ".json":
+                            parsed = json.loads(text_content)
+                            if isinstance(parsed, list):
+                                items.extend(parsed)
+                            elif isinstance(parsed, dict) and "feedback" in parsed:
+                                items.extend(parsed["feedback"])
+                            else:
+                                items.append(parsed)
+                        elif member_ext == ".csv":
+                            reader = csv.DictReader(io.StringIO(text_content))
+                            for row in reader:
+                                if "rating" in row and row["rating"]:
+                                    try:
+                                        row["rating"] = int(float(row["rating"]))
+                                    except ValueError:
+                                        pass
+                                items.append(row)
+                        elif member_ext in (".txt", ".md"):
+                            clean_text = text_content.strip()
+                            if clean_text:
+                                items.append({
+                                    "title": Path(member.filename).stem.replace("_", " ").title(),
+                                    "content": clean_text,
+                                    "source": "Interview Transcript",
+                                    "rating": 3,
+                                    "user_name": Path(member.filename).stem,
+                                    "segment": "Research",
+                                    "app_version": "v2.3",
+                                })
+                except Exception as ze:
+                    print(f"  [Warning] Skipping archive entry {member.filename}: {ze}")
+                    continue
+
+    elif ext == ".json":
+        with open(file_path, "r", encoding="utf-8", errors="replace") as f:
             data = json.load(f)
             if isinstance(data, list):
                 items = data
@@ -32,19 +91,33 @@ def load_feedback_file(file_path: Path) -> List[Dict[str, Any]]:
                 items = data["feedback"]
             else:
                 items = [data]
+
     elif ext == ".csv":
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, "r", encoding="utf-8", errors="replace") as f:
             reader = csv.DictReader(f)
             for row in reader:
-                # Convert rating to int if possible
                 if "rating" in row and row["rating"]:
                     try:
                         row["rating"] = int(float(row["rating"]))
                     except ValueError:
                         pass
                 items.append(row)
+
+    elif ext in (".txt", ".md"):
+        with open(file_path, "r", encoding="utf-8", errors="replace") as f:
+            content = f.read().strip()
+            if content:
+                items.append({
+                    "title": file_path.stem.replace("_", " ").title(),
+                    "content": content,
+                    "source": "Interview Transcript",
+                    "rating": 3,
+                    "user_name": file_path.stem,
+                    "segment": "Research",
+                    "app_version": "v2.3",
+                })
     else:
-        raise ValueError(f"Unsupported file format: {ext}. Expected .csv or .json")
+        raise ValueError(f"Unsupported file format: {ext}. Expected .zip, .csv, .json, or .txt/.md")
 
     return items
 

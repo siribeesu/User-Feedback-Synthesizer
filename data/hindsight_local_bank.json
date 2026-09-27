@@ -1560,6 +1560,46 @@
           "rating:5",
           "version:v2.2"
         ]
+      },
+      {
+        "id": "mem_77",
+        "text": "The new checkout flow is confusing. I lost my items when going back.",
+        "timestamp": "2026-09-27T18:25:19.357763",
+        "metadata": {
+          "source": "Interview Transcript",
+          "user_id": "unknown",
+          "user_name": "interview1",
+          "segment": "Research",
+          "rating": "3",
+          "title": "Interview1",
+          "theme": "",
+          "app_version": "v2.3"
+        },
+        "tags": [
+          "source:interview_transcript",
+          "rating:3",
+          "version:v2.3"
+        ]
+      },
+      {
+        "id": "u999",
+        "text": "Great dark mode update",
+        "timestamp": "2026-09-27T18:25:19.357763",
+        "metadata": {
+          "source": "App Store",
+          "user_id": "unknown",
+          "user_name": "Anonymous",
+          "segment": "General",
+          "rating": "5",
+          "title": "",
+          "theme": "",
+          "app_version": "unknown"
+        },
+        "tags": [
+          "source:app_store",
+          "rating:5",
+          "version:unknown"
+        ]
       }
     ],
     "test-bank": [

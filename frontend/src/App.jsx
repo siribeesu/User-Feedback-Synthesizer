@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Brain,
   Search,
@@ -14,7 +14,12 @@ import {
   User,
   MessageSquare,
   TrendingDown,
-  Upload
+  Upload,
+  Folder,
+  FileArchive,
+  Trash2,
+  CheckCircle2,
+  UploadCloud
 } from 'lucide-react';
 import './App.css';
 
@@ -33,6 +38,12 @@ export default function App() {
   const [digest, setDigest] = useState(null);
   const [isSynthesizing, setIsSynthesizing] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef(null);
+  const folderInputRef = useRef(null);
+
   const [feedbackInput, setFeedbackInput] = useState({
     title: '',
     content: '',
@@ -168,6 +179,55 @@ export default function App() {
       fetchThemes();
     } catch (err) {
       showNotification('Ingestion error: ' + err.message);
+    }
+  };
+
+  const handleFilesAdded = (filesList) => {
+    const newFiles = Array.from(filesList);
+    setSelectedFiles((prev) => [...prev, ...newFiles]);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleFilesAdded(e.dataTransfer.files);
+    }
+  };
+
+  const handleRemoveFile = (index) => {
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleBatchUpload = async () => {
+    if (selectedFiles.length === 0) return;
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      selectedFiles.forEach((file) => {
+        formData.append('files', file);
+      });
+      const res = await fetch(`${API_BASE}/ingest/batch`, {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      showNotification(`Extracted & retained ${data.total_retained} feedback records from ${data.total_files} file(s)!`);
+      setSelectedFiles([]);
+      fetchThemes();
+    } catch (err) {
+      showNotification('Batch upload error: ' + err.message);
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -438,84 +498,205 @@ export default function App() {
 
       {/* TAB 3: INGESTION PIPELINE */}
       {activeTab === 'ingest' && (
-        <div style={{ maxWidth: '700px', margin: '0 auto' }}>
-          <h3 className="section-heading">Quick Ingest Feedback</h3>
-          <p style={{ color: '#94a3b8', fontSize: '13px', marginBottom: '20px' }}>
-            Store an individual customer feedback item into Hindsight using <code>retain()</code> with metadata tags.
-          </p>
+        <div className="ingest-grid">
+          {/* Left Column: Drag & Drop Archives & Folders */}
+          <div>
+            <h3 className="section-heading">Batch Archive & Folder Upload</h3>
+            <p style={{ color: '#94a3b8', fontSize: '13px', marginBottom: '16px' }}>
+              Drag & drop customer support exports (<strong>.zip</strong>), interview transcripts (<strong>.txt, .md</strong>), or feedback dumps (<strong>.csv, .json</strong>).
+            </p>
 
-          <form onSubmit={handleFeedbackSubmit}>
-            <div className="form-group" style={{ marginBottom: '14px' }}>
-              <label className="form-label">Title / Summary</label>
+            <div
+              className={`drop-zone ${isDragging ? 'active' : ''}`}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <div className="drop-zone-icon">
+                <UploadCloud size={24} />
+              </div>
+              <div style={{ fontWeight: '600', color: '#fff', fontSize: '14px' }}>
+                Drop .zip archives, folders, or CSV/JSON files here
+              </div>
+              <div style={{ color: '#94a3b8', fontSize: '12px' }}>
+                Auto-extracts nested tickets, transcripts, and reviews
+              </div>
+
+              <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }} onClick={(e) => e.stopPropagation()}>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  style={{ fontSize: '12px', padding: '6px 12px' }}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <FileArchive size={14} /> Browse Files (.zip, .csv)
+                </button>
+
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  style={{ fontSize: '12px', padding: '6px 12px' }}
+                  onClick={() => folderInputRef.current?.click()}
+                >
+                  <Folder size={14} /> Choose Folder
+                </button>
+              </div>
+
+              {/* Hidden file & folder inputs */}
               <input
-                type="text"
-                className="form-control"
-                placeholder="e.g. Checkout failed on iOS v2.3"
-                value={feedbackInput.title}
-                onChange={(e) => setFeedbackInput({ ...feedbackInput, title: e.target.value })}
-                required
+                type="file"
+                ref={fileInputRef}
+                multiple
+                accept=".zip,.csv,.json,.txt,.md"
+                style={{ display: 'none' }}
+                onChange={(e) => {
+                  if (e.target.files) handleFilesAdded(e.target.files);
+                }}
+              />
+              <input
+                type="file"
+                ref={folderInputRef}
+                webkitdirectory=""
+                directory=""
+                multiple
+                style={{ display: 'none' }}
+                onChange={(e) => {
+                  if (e.target.files) handleFilesAdded(e.target.files);
+                }}
               />
             </div>
 
-            <div className="form-group" style={{ marginBottom: '14px' }}>
-              <label className="form-label">Feedback Content</label>
-              <textarea
-                className="form-control"
-                rows="4"
-                placeholder="Paste verbatim customer review, support ticket, or Slack message..."
-                value={feedbackInput.content}
-                onChange={(e) => setFeedbackInput({ ...feedbackInput, content: e.target.value })}
-                required
-              />
-            </div>
+            {selectedFiles.length > 0 && (
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '14px' }}>
+                  <span style={{ fontSize: '13px', color: '#94a3b8' }}>
+                    Staged Files (<strong>{selectedFiles.length}</strong>)
+                  </span>
+                  <button
+                    type="button"
+                    style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '12px', cursor: 'pointer' }}
+                    onClick={() => setSelectedFiles([])}
+                  >
+                    Clear All
+                  </button>
+                </div>
 
-            <div className="form-grid">
-              <div className="form-group">
-                <label className="form-label">Source Channel</label>
-                <select
-                  className="form-control"
-                  value={feedbackInput.source}
-                  onChange={(e) => setFeedbackInput({ ...feedbackInput, source: e.target.value })}
+                <div className="file-preview-list">
+                  {selectedFiles.map((file, idx) => (
+                    <div key={idx} className="file-preview-item">
+                      <div className="file-preview-name">
+                        {file.name.endsWith('.zip') ? <FileArchive size={16} color="#fbbf24" /> : <FileText size={16} color="#60a5fa" />}
+                        <span>{file.name}</span>
+                        <span style={{ color: '#64748b', fontSize: '11px' }}>
+                          ({(file.size / 1024).toFixed(1)} KB)
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        className="file-remove-btn"
+                        onClick={() => handleRemoveFile(idx)}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  className="btn-primary"
+                  style={{ width: '100%', justifyContent: 'center', marginTop: '10px' }}
+                  onClick={handleBatchUpload}
+                  disabled={isUploading}
                 >
-                  <option value="App Store">App Store</option>
-                  <option value="Google Play">Google Play</option>
-                  <option value="Zendesk">Zendesk</option>
-                  <option value="Intercom">Intercom</option>
-                  <option value="Discord">Discord</option>
-                  <option value="NPS Survey">NPS Survey</option>
-                </select>
+                  <Upload size={16} />
+                  {isUploading ? 'Extracting & Retaining...' : `Upload & Retain into Memory (${selectedFiles.length})`}
+                </button>
               </div>
+            )}
+          </div>
 
-              <div className="form-group">
-                <label className="form-label">Rating (1 to 5)</label>
-                <select
-                  className="form-control"
-                  value={feedbackInput.rating}
-                  onChange={(e) => setFeedbackInput({ ...feedbackInput, rating: Number(e.target.value) })}
-                >
-                  <option value={1}>1 Star</option>
-                  <option value={2}>2 Stars</option>
-                  <option value={3}>3 Stars</option>
-                  <option value={4}>4 Stars</option>
-                  <option value={5}>5 Stars</option>
-                </select>
-              </div>
+          {/* Right Column: Quick Single Feedback Form */}
+          <div>
+            <h3 className="section-heading">Quick Single Feedback Entry</h3>
+            <p style={{ color: '#94a3b8', fontSize: '13px', marginBottom: '16px' }}>
+              Store an individual customer feedback item into Hindsight using <code>retain()</code> with metadata tags.
+            </p>
 
-              <div className="form-group">
-                <label className="form-label">App Version</label>
+            <form onSubmit={handleFeedbackSubmit}>
+              <div className="form-group" style={{ marginBottom: '14px' }}>
+                <label className="form-label">Title / Summary</label>
                 <input
                   type="text"
                   className="form-control"
-                  value={feedbackInput.app_version}
-                  onChange={(e) => setFeedbackInput({ ...feedbackInput, app_version: e.target.value })}
+                  placeholder="e.g. Checkout failed on iOS v2.3"
+                  value={feedbackInput.title}
+                  onChange={(e) => setFeedbackInput({ ...feedbackInput, title: e.target.value })}
+                  required
                 />
               </div>
-            </div>
 
-            <button type="submit" className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
-              <Send size={16} /> Retain into Hindsight Memory
-            </button>
-          </form>
+              <div className="form-group" style={{ marginBottom: '14px' }}>
+                <label className="form-label">Feedback Content</label>
+                <textarea
+                  className="form-control"
+                  rows="4"
+                  placeholder="Paste verbatim customer review, support ticket, or Slack message..."
+                  value={feedbackInput.content}
+                  onChange={(e) => setFeedbackInput({ ...feedbackInput, content: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="form-grid">
+                <div className="form-group">
+                  <label className="form-label">Source Channel</label>
+                  <select
+                    className="form-control"
+                    value={feedbackInput.source}
+                    onChange={(e) => setFeedbackInput({ ...feedbackInput, source: e.target.value })}
+                  >
+                    <option value="App Store">App Store</option>
+                    <option value="Google Play">Google Play</option>
+                    <option value="Zendesk">Zendesk</option>
+                    <option value="Intercom">Intercom</option>
+                    <option value="Discord">Discord</option>
+                    <option value="NPS Survey">NPS Survey</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Rating (1 to 5)</label>
+                  <select
+                    className="form-control"
+                    value={feedbackInput.rating}
+                    onChange={(e) => setFeedbackInput({ ...feedbackInput, rating: Number(e.target.value) })}
+                  >
+                    <option value={1}>1 Star</option>
+                    <option value={2}>2 Stars</option>
+                    <option value={3}>3 Stars</option>
+                    <option value={4}>4 Stars</option>
+                    <option value={5}>5 Stars</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">App Version</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={feedbackInput.app_version}
+                    onChange={(e) => setFeedbackInput({ ...feedbackInput, app_version: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <button type="submit" className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
+                <Send size={16} /> Retain into Hindsight Memory
+              </button>
+            </form>
+          </div>
         </div>
       )}
 

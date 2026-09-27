@@ -583,26 +583,43 @@ def ingest_single_feedback(payload: SingleFeedbackPayload):
 
 @app.post("/ingest/batch")
 async def ingest_batch_feedback(
-    file: UploadFile = File(...),
+    files: List[UploadFile] = File(...),
     bank_id: str = Query(default="mobile-app-feedback"),
 ):
-    temp_path = settings.data_dir / f"upload_{file.filename}"
-    try:
-        content_bytes = await file.read()
-        with open(temp_path, "wb") as f:
-            f.write(content_bytes)
+    total_retained = 0
+    processed_files = []
+    all_items = []
 
-        items = load_feedback_file(temp_path)
-        res = client.retain_batch(bank_id=bank_id, items=items)
-        return {"status": "success", "file": file.filename, "retained_count": res["count"]}
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    finally:
-        if temp_path.exists():
-            try:
-                temp_path.unlink()
-            except Exception:
-                pass
+    for file in files:
+        safe_name = Path(file.filename or "upload_file").name
+        temp_path = settings.data_dir / f"upload_{safe_name}"
+        try:
+            content_bytes = await file.read()
+            with open(temp_path, "wb") as f:
+                f.write(content_bytes)
+
+            items = load_feedback_file(temp_path)
+            all_items.extend(items)
+            processed_files.append({"name": safe_name, "records": len(items), "status": "extracted"})
+        except Exception as fe:
+            processed_files.append({"name": safe_name, "error": str(fe), "status": "failed"})
+        finally:
+            if temp_path.exists():
+                try:
+                    temp_path.unlink()
+                except Exception:
+                    pass
+
+    if all_items:
+        res = client.retain_batch(bank_id=bank_id, items=all_items)
+        total_retained = res.get("count", len(all_items))
+
+    return {
+        "status": "success",
+        "total_files": len(files),
+        "total_retained": total_retained,
+        "files": processed_files,
+    }
 
 
 @app.get("/search")
