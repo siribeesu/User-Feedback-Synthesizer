@@ -369,9 +369,10 @@ export default function App() {
         <div className="metric-card accent-blue">
           <div className="metric-card-content">
             <div className="metric-label">Retained Records</div>
-            <div className="metric-value">75+</div>
+            <div className="metric-value">{health?.retained_count ?? 0}</div>
             <div className="metric-subtext">
-              <CheckCircle2 size={13} color="var(--accent)" /> Multi-channel support
+              <CheckCircle2 size={13} color="var(--accent)" />
+              {health?.retained_count ? 'Multi-channel support' : 'Ready for ingestion'}
             </div>
           </div>
           <div className="metric-icon-wrap blue">
@@ -408,9 +409,15 @@ export default function App() {
         <div className="metric-card accent-amber">
           <div className="metric-card-content">
             <div className="metric-label">Release Sentiment</div>
-            <div className="metric-value">2.7 / 5.0</div>
-            <div className="metric-subtext" style={{ color: 'var(--danger)' }}>
-              <TrendingDown size={13} /> v2.3 Checkout Regression
+            <div className="metric-value">{health?.retained_count ? '2.7 / 5.0' : 'N/A'}</div>
+            <div className="metric-subtext" style={{ color: health?.retained_count ? 'var(--danger)' : 'var(--text-muted)' }}>
+              {health?.retained_count ? (
+                <>
+                  <TrendingDown size={13} /> v2.3 Checkout Regression
+                </>
+              ) : (
+                'Awaiting feedback ingestion'
+              )}
             </div>
           </div>
           <div className="metric-icon-wrap amber">
@@ -477,23 +484,29 @@ export default function App() {
             />
 
             <div className="theme-list">
-              {filteredThemes.map((t) => (
-                <div
-                  key={t.id}
-                  className={`theme-item ${selectedThemeId === t.id ? 'active' : ''}`}
-                  onClick={() => setSelectedThemeId(t.id)}
-                >
-                  <div className="theme-item-top">
-                    <h4 className="theme-item-title">{t.name}</h4>
-                  </div>
-                  <div className="theme-item-meta">
-                    <span className="citation-pill">{t.evidence_count} citations</span>
-                    <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                      Strict Directive
-                    </span>
-                  </div>
+              {filteredThemes.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '24px 14px', color: 'var(--text-muted)', fontSize: '13px' }}>
+                  No standing themes yet. Ingest feedback in the "Ingestion Pipeline" tab and click "⚡ Run Synthesis".
                 </div>
-              ))}
+              ) : (
+                filteredThemes.map((t) => (
+                  <div
+                    key={t.id}
+                    className={`theme-item ${selectedThemeId === t.id ? 'active' : ''}`}
+                    onClick={() => setSelectedThemeId(t.id)}
+                  >
+                    <div className="theme-item-top">
+                      <h4 className="theme-item-title">{t.name}</h4>
+                    </div>
+                    <div className="theme-item-meta">
+                      <span className="citation-pill">{t.evidence_count} citations</span>
+                      <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                        Strict Directive
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
@@ -569,7 +582,13 @@ export default function App() {
                 )}
               </div>
             ) : (
-              <p style={{ color: 'var(--text-muted)' }}>Select a theme from the left to inspect details.</p>
+              <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-muted)' }}>
+                <Layers size={44} style={{ opacity: 0.4, marginBottom: '14px' }} />
+                <h3 style={{ color: 'var(--text-bold)', fontSize: '18px', margin: '0 0 8px 0' }}>No Theme Selected</h3>
+                <p style={{ fontSize: '13.5px', maxWidth: '440px', margin: '0 auto' }}>
+                  Upload customer feedback in the <strong>Ingestion Pipeline</strong> tab, then click <strong>⚡ Run Synthesis</strong> to extract evidence-backed themes.
+                </p>
+              </div>
             )}
           </div>
         </div>
@@ -971,7 +990,20 @@ export default function App() {
               ))}
             </div>
           ) : (
-            <p style={{ color: 'var(--text-muted)' }}>Loading executive digest...</p>
+            <div className="digest-card" style={{ textAlign: 'center', padding: '50px 24px', color: 'var(--text-muted)' }}>
+              <FileText size={44} style={{ opacity: 0.4, marginBottom: '14px' }} />
+              <h3 style={{ color: 'var(--text-bold)', fontSize: '18px', margin: '0 0 8px 0' }}>No Executive Digest Generated Yet</h3>
+              <p style={{ fontSize: '13.5px', maxWidth: '520px', margin: '0 auto 20px auto', lineHeight: '1.6' }}>
+                No feedback has been synthesized yet. Ingest your customer feedback files in the <strong>Ingestion Pipeline</strong> tab, then click <strong>⚡ Run Synthesis</strong> to generate your evidence-grounded digest.
+              </p>
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={() => setActiveTab('ingest')}
+              >
+                <Upload size={16} /> Go to Ingestion Pipeline
+              </button>
+            </div>
           )}
         </div>
       )}

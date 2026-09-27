@@ -503,11 +503,14 @@ def get_dashboard_ui():
 @app.get("/health")
 def get_health():
     is_live = client.is_live()
+    storage = client._load_storage()
+    memories = storage.get("memories", {}).get(settings.default_bank_id, [])
     return {
         "status": "healthy",
         "hindsight_backend": "online" if is_live else "offline_embedded",
         "hindsight_url": client.base_url,
         "default_bank": settings.default_bank_id,
+        "retained_count": len(memories),
         "timestamp": datetime.utcnow().isoformat() + "Z",
     }
 

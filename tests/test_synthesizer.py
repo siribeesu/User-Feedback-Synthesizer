@@ -16,11 +16,35 @@ from src.api import app
 
 @pytest.fixture(scope="module")
 def client():
-    return HindsightMemoryClient()
+    c = HindsightMemoryClient()
+    bank_cfg = get_bank_config("mobile-app-feedback")
+    c.create_or_update_bank(bank_cfg)
+    test_items = [
+        {
+            "id": "FB-TEST-001",
+            "content": "Checkout crashed with gateway timeout when pressing payment submit on v2.3.",
+            "source": "Zendesk",
+            "rating": 1,
+            "app_version": "v2.3",
+            "user_name": "Test User",
+            "segment": "Enterprise",
+        },
+        {
+            "id": "FB-TEST-002",
+            "content": "Fast and smooth checkout payment in v2.2 with Apple Pay.",
+            "source": "App Store",
+            "rating": 5,
+            "app_version": "v2.2",
+            "user_name": "Happy User",
+            "segment": "Pro",
+        },
+    ]
+    c.retain_batch(bank_id="mobile-app-feedback", items=test_items)
+    return c
 
 
 @pytest.fixture(scope="module")
-def api_test_client():
+def api_test_client(client):
     return TestClient(app)
 
 
