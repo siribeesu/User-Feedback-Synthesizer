@@ -31,12 +31,13 @@ import {
   Filter
 } from 'lucide-react';
 import './App.css';
+import { resolveInitialTheme, saveTheme, applyThemeToDOM, getStoredTheme } from './theme';
 
 const API_BASE = ''; // Relative path works for both proxy and FastAPI hosted static
 
 export default function App() {
   const [theme, setTheme] = useState(() => {
-    return localStorage.getItem('ufs_theme') || 'dark';
+    return resolveInitialTheme();
   });
   const [activeTab, setActiveTab] = useState('themes');
   const [health, setHealth] = useState(null);
@@ -70,11 +71,34 @@ export default function App() {
   });
   const [notification, setNotification] = useState('');
 
-  // Synchronize theme with DOM and localStorage
+  // Synchronize theme with DOM and safe guarded storage
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('ufs_theme', theme);
+    applyThemeToDOM(theme);
+    saveTheme(theme);
   }, [theme]);
+
+  // Real-time listener for OS preference changes (prefers-color-scheme)
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleOSThemeChange = (e) => {
+      // If user hasn't explicitly set a custom override, follow OS automatically
+      const userChoice = getStoredTheme();
+      if (!userChoice) {
+        const next = e.matches ? 'dark' : 'light';
+        setTheme(next);
+        applyThemeToDOM(next);
+      }
+    };
+
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener('change', handleOSThemeChange);
+      return () => mediaQuery.removeEventListener('change', handleOSThemeChange);
+    } else if (mediaQuery.addListener) {
+      mediaQuery.addListener(handleOSThemeChange);
+      return () => mediaQuery.removeListener(handleOSThemeChange);
+    }
+  }, []);
 
   const toggleTheme = () => {
     setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));

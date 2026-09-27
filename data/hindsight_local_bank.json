@@ -1,6 +1,199 @@
 {
-  "banks": {},
-  "memories": {},
-  "mental_models": {},
-  "mental_model_history": {}
+  "banks": {
+    "mobile-app-feedback": {
+      "bank_id": "mobile-app-feedback",
+      "name": "Mobile App Feedback",
+      "product": "Mobile App",
+      "mission": "I am a product feedback analyst for Mobile App. I surface recurring pain points, feature requests, and sentiment shifts, grounded strictly in submitted feedback.",
+      "directives": [
+        {
+          "name": "strict_grounding",
+          "content": "Never invent a complaint that isn't backed by at least one retained memory.",
+          "priority": 1,
+          "is_active": true,
+          "tags": null
+        },
+        {
+          "name": "source_citation",
+          "content": "Always cite the number of sources per claim.",
+          "priority": 2,
+          "is_active": true,
+          "tags": null
+        },
+        {
+          "name": "preserve_contradictions",
+          "content": "Do not smooth over contradictions between users; highlight conflicting opinions explicitly.",
+          "priority": 3,
+          "is_active": true,
+          "tags": null
+        }
+      ],
+      "disposition": {
+        "skepticism": 5,
+        "agreeableness": 1,
+        "literalism": 4,
+        "empathy": 1
+      },
+      "updated_at": "2026-09-27T18:48:06.674147Z"
+    }
+  },
+  "memories": {
+    "mobile-app-feedback": [
+      {
+        "id": "FB-TEST-001",
+        "text": "Checkout crashed with gateway timeout when pressing payment submit on v2.3.",
+        "timestamp": "2026-09-27T18:48:06.677426",
+        "metadata": {
+          "source": "Zendesk",
+          "user_id": "unknown",
+          "user_name": "Test User",
+          "segment": "Enterprise",
+          "rating": "1",
+          "title": "",
+          "theme": "",
+          "app_version": "v2.3"
+        },
+        "tags": [
+          "source:zendesk",
+          "rating:1",
+          "version:v2.3"
+        ]
+      },
+      {
+        "id": "FB-TEST-002",
+        "text": "Fast and smooth checkout payment in v2.2 with Apple Pay.",
+        "timestamp": "2026-09-27T18:48:06.677426",
+        "metadata": {
+          "source": "App Store",
+          "user_id": "unknown",
+          "user_name": "Happy User",
+          "segment": "Pro",
+          "rating": "5",
+          "title": "",
+          "theme": "",
+          "app_version": "v2.2"
+        },
+        "tags": [
+          "source:app_store",
+          "rating:5",
+          "version:v2.2"
+        ]
+      }
+    ],
+    "test-bank": [
+      {
+        "id": "FB-TEST-001",
+        "text": "The application crashed when pressing payment submit on v2.3.",
+        "timestamp": "2026-09-27T18:48:06.680575",
+        "metadata": {
+          "source": "Zendesk",
+          "user_id": "unknown",
+          "user_name": "Test User",
+          "segment": "Enterprise",
+          "rating": "1",
+          "title": "",
+          "theme": "",
+          "app_version": "v2.3"
+        },
+        "tags": [
+          "source:zendesk",
+          "rating:1",
+          "version:v2.3"
+        ]
+      }
+    ]
+  },
+  "mental_models": {
+    "mobile-app-feedback": {
+      "onboarding-friction": {
+        "id": "onboarding-friction",
+        "name": "Onboarding Friction",
+        "query": "What are users saying about onboarding, account creation, and initial sign-up friction?",
+        "tags": [
+          "onboarding",
+          "sign-up",
+          "ux"
+        ],
+        "observation": null,
+        "evidence_count": 0,
+        "last_refreshed": null
+      },
+      "pricing-complaints": {
+        "id": "pricing-complaints",
+        "name": "Pricing Complaints",
+        "query": "What are user complaints regarding pricing plans, subscription cost increases, and paywall limitations?",
+        "tags": [
+          "pricing",
+          "billing",
+          "subscriptions"
+        ],
+        "observation": null,
+        "evidence_count": 0,
+        "last_refreshed": null
+      },
+      "feature-requests-exports": {
+        "id": "feature-requests-exports",
+        "name": "Feature Requests: Exports",
+        "query": "What feature requests do users have regarding data export, CSV/Excel/PDF formats, and external integrations?",
+        "tags": [
+          "feature_request",
+          "export",
+          "integration"
+        ],
+        "observation": null,
+        "evidence_count": 0,
+        "last_refreshed": null
+      },
+      "release-v23-stability": {
+        "id": "release-v23-stability",
+        "name": "Release v2.3 Stability & Bugs",
+        "query": "What issues, bugs, and performance regressions were reported after release v2.3?",
+        "tags": [
+          "bugs",
+          "v2.3",
+          "crashes",
+          "checkout"
+        ],
+        "observation": "### Synthesized Finding (Grounded in 2 Verified Source Records)\n\n- **Confidence & Grounding**: Strict directive compliance \u2014 zero invented claims.\n- **Evidence Volume**: 2 independent feedback submissions cited.\n- **Average Sentiment**: 3.0 / 5.0.\n- **Source Distribution**: Zendesk: 1, App Store: 1.\n- **Affected Versions**: v2.3: 1, v2.2: 1.\n\n**TEMPORAL SHIFT DETECTED**: Sentiment flipped sharply from positive in v2.2 (avg rating 5.0/5 across 1 sources) to severe dissatisfaction in v2.3 (avg rating 1.0/5 across 1 sources). The degradation coincides directly with the release of v2.3.\n\n#### Representative Source Evidence:\n- [Source 1]: \"Checkout crashed with gateway timeout when pressing payment submit on v2.3.\" \u2014 *Test User, Zendesk (v2.3), Rating: 1/5*\n- [Source 2]: \"Fast and smooth checkout payment in v2.2 with Apple Pay.\" \u2014 *Happy User, App Store (v2.2), Rating: 5/5*",
+        "evidence_count": 2,
+        "last_refreshed": "2026-09-27T18:48:06.693528Z",
+        "evidence_facts": [
+          {
+            "id": "FB-TEST-001",
+            "text": "Checkout crashed with gateway timeout when pressing payment submit on v2.3.",
+            "context": "Source: Zendesk | User: Test User (Enterprise) | Rating: 1 | Version: v2.3"
+          },
+          {
+            "id": "FB-TEST-002",
+            "text": "Fast and smooth checkout payment in v2.2 with Apple Pay.",
+            "context": "Source: App Store | User: Happy User (Pro) | Rating: 5 | Version: v2.2"
+          }
+        ]
+      },
+      "churn-signals": {
+        "id": "churn-signals",
+        "name": "Churn Signals",
+        "query": "What are the primary churn signals, cancellation reasons, and user frustration triggers leading users to look for alternatives?",
+        "tags": [
+          "churn",
+          "cancellation",
+          "competitors"
+        ],
+        "observation": null,
+        "evidence_count": 0,
+        "last_refreshed": null
+      }
+    }
+  },
+  "mental_model_history": {
+    "mobile-app-feedback": {
+      "release-v23-stability": [
+        {
+          "timestamp": "2026-09-27T18:48:06.693528Z",
+          "evidence_count": 2,
+          "observation_snippet": "### Synthesized Finding (Grounded in 2 Verified Source Records)\n\n- **Confidence & Grounding**: Strict directive compliance \u2014 zero invented claims.\n- **Evidence Volume**: 2 independent feedback submissions cited.\n- **Average Sentiment**: 3.0 / 5.0.\n- **Source Distribution**: Zendesk: 1, App Store: 1...."
+        }
+      ]
+    }
+  }
 }
