@@ -44,7 +44,7 @@ export default function App() {
   const [selectedThemeId, setSelectedThemeId] = useState(null);
   const [themeDetail, setThemeDetail] = useState(null);
   const [sidebarSearch, setSidebarSearch] = useState('');
-  const [searchQuery, setSearchQuery] = useState('checkout bugs');
+  const [searchQuery, setSearchQuery] = useState('');
   const [sourceFilter, setSourceFilter] = useState('All');
   const [ratingFilter, setRatingFilter] = useState('All');
   const [searchResults, setSearchResults] = useState([]);
@@ -65,8 +65,8 @@ export default function App() {
     title: '',
     content: '',
     source: 'App Store',
-    rating: 1,
-    app_version: 'v2.3'
+    rating: 5,
+    app_version: ''
   });
   const [notification, setNotification] = useState('');
 
@@ -204,8 +204,8 @@ export default function App() {
         title: '',
         content: '',
         source: 'App Store',
-        rating: 1,
-        app_version: 'v2.3'
+        rating: 5,
+        app_version: ''
       });
       fetchThemes();
     } catch (err) {
@@ -409,15 +409,11 @@ export default function App() {
         <div className="metric-card accent-amber">
           <div className="metric-card-content">
             <div className="metric-label">Release Sentiment</div>
-            <div className="metric-value">{health?.retained_count ? '2.7 / 5.0' : 'N/A'}</div>
-            <div className="metric-subtext" style={{ color: health?.retained_count ? 'var(--danger)' : 'var(--text-muted)' }}>
-              {health?.retained_count ? (
-                <>
-                  <TrendingDown size={13} /> v2.3 Checkout Regression
-                </>
-              ) : (
-                'Awaiting feedback ingestion'
-              )}
+            <div className="metric-value">
+              {health?.retained_count && health?.avg_rating ? `${health.avg_rating} / 5.0` : '-- / 5.0'}
+            </div>
+            <div className="metric-subtext" style={{ color: 'var(--text-muted)' }}>
+              {health?.retained_count ? 'Average rating from customer input' : 'Awaiting feedback ingestion'}
             </div>
           </div>
           <div className="metric-icon-wrap amber">
@@ -605,7 +601,7 @@ export default function App() {
                 className="search-input"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search raw feedback memories (e.g. checkout bugs, pricing complaints, dark mode)..."
+                placeholder="Search raw feedback memories by keyword, topic, or channel..."
               />
             </div>
 
@@ -646,10 +642,10 @@ export default function App() {
           <div className="quick-filter-chips">
             <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600' }}>Quick Filters:</span>
             {[
-              { label: '🚨 Checkout Bugs', query: 'checkout error crash bug' },
-              { label: '🌙 Dark Mode', query: 'dark mode theme display' },
-              { label: '💰 Pricing & Billing', query: 'price cost subscription expensive' },
-              { label: '⚡ Performance', query: 'slow lag battery performance' }
+              { label: '⭐ 1-Star (Defects)', query: 'rating:1' },
+              { label: '⭐ 5-Star (Praise)', query: 'rating:5' },
+              { label: '📱 Mobile App', query: 'mobile' },
+              { label: '💬 Support Tickets', query: 'ticket' }
             ].map((chip, idx) => (
               <button
                 key={idx}
@@ -673,30 +669,40 @@ export default function App() {
           </div>
 
           <div className="results-list">
-            {searchResults.map((r, idx) => (
-              <div key={idx} className="result-card">
-                <div className="result-card-top">
-                  <h4 className="result-title">
-                    {r.metadata?.title || `Feedback Record #${idx + 1}`}
-                  </h4>
-                  <div className="result-rating-stars">
-                    {'★'.repeat(r.metadata?.rating || 1)}
-                    {'☆'.repeat(5 - (r.metadata?.rating || 1))}
+            {searchResults.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '48px 20px', color: 'var(--text-muted)' }}>
+                <Search size={36} style={{ opacity: 0.4, marginBottom: '12px' }} />
+                <h4 style={{ color: 'var(--text-bold)', margin: '0 0 6px 0' }}>No Feedback Records Found</h4>
+                <p style={{ fontSize: '13px', maxWidth: '420px', margin: '0 auto' }}>
+                  No feedback records match this query. Ingest feedback in the <strong>Ingestion Pipeline</strong> tab first.
+                </p>
+              </div>
+            ) : (
+              searchResults.map((r, idx) => (
+                <div key={idx} className="result-card">
+                  <div className="result-card-top">
+                    <h4 className="result-title">
+                      {r.metadata?.title || `Feedback Record #${idx + 1}`}
+                    </h4>
+                    <div className="result-rating-stars">
+                      {'★'.repeat(r.metadata?.rating || 1)}
+                      {'☆'.repeat(5 - (r.metadata?.rating || 1))}
+                    </div>
+                  </div>
+
+                  <p className="result-body">{r.text}</p>
+
+                  <div className="result-tags">
+                    <span className="channel-badge">{r.metadata?.source || 'Channel'}</span>
+                    <span>👤 {r.metadata?.user_name || 'Anonymous User'}</span>
+                    <span>•</span>
+                    <span>🏷️ Version: <code>{r.metadata?.app_version || 'N/A'}</code></span>
+                    <span>•</span>
+                    <span>📅 {(r.timestamp || '').substring(0, 10)}</span>
                   </div>
                 </div>
-
-                <p className="result-body">{r.text}</p>
-
-                <div className="result-tags">
-                  <span className="channel-badge">{r.metadata?.source || 'Channel'}</span>
-                  <span>👤 {r.metadata?.user_name || 'Anonymous User'}</span>
-                  <span>•</span>
-                  <span>🏷️ Version: <code>{r.metadata?.app_version || 'N/A'}</code></span>
-                  <span>•</span>
-                  <span>📅 {(r.timestamp || '').substring(0, 10)}</span>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       )}
@@ -849,7 +855,7 @@ export default function App() {
                 <input
                   type="text"
                   className="form-control"
-                  placeholder="e.g. Checkout failed repeatedly on iOS v2.3"
+                  placeholder="e.g. App navigation freezes after recent update"
                   value={feedbackInput.title}
                   onChange={(e) => setFeedbackInput({ ...feedbackInput, title: e.target.value })}
                   required
@@ -909,6 +915,7 @@ export default function App() {
                   <input
                     type="text"
                     className="form-control"
+                    placeholder="e.g. v1.0.0"
                     value={feedbackInput.app_version}
                     onChange={(e) => setFeedbackInput({ ...feedbackInput, app_version: e.target.value })}
                   />

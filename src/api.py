@@ -505,12 +505,19 @@ def get_health():
     is_live = client.is_live()
     storage = client._load_storage()
     memories = storage.get("memories", {}).get(settings.default_bank_id, [])
+    ratings = [
+        int(m["metadata"]["rating"])
+        for m in memories
+        if "metadata" in m and str(m["metadata"].get("rating", "")).isdigit()
+    ]
+    avg_rating = round(sum(ratings) / len(ratings), 1) if ratings else None
     return {
         "status": "healthy",
         "hindsight_backend": "online" if is_live else "offline_embedded",
         "hindsight_url": client.base_url,
         "default_bank": settings.default_bank_id,
         "retained_count": len(memories),
+        "avg_rating": avg_rating,
         "timestamp": datetime.utcnow().isoformat() + "Z",
     }
 
