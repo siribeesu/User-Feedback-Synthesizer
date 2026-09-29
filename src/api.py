@@ -32,8 +32,8 @@ app.add_middleware(
 client = HindsightMemoryClient()
 
 DIST_DIR = settings.config_file.parent.parent / "frontend" / "dist"
-if (DIST_DIR / "assets").exists():
-    app.mount("/assets", StaticFiles(directory=str(DIST_DIR / "assets")), name="assets")
+(DIST_DIR / "assets").mkdir(parents=True, exist_ok=True)
+app.mount("/assets", StaticFiles(directory=str(DIST_DIR / "assets")), name="assets")
 
 
 class SingleFeedbackPayload(BaseModel):
@@ -61,7 +61,7 @@ class SearchQuery(BaseModel):
     limit: int = 20
 
 
-@app.get("/")
+@app.get("/", response_class=HTMLResponse)
 def get_dashboard_ui():
     """Serves production React dashboard if built, else fallback HTML."""
     index_file = DIST_DIR / "index.html"
@@ -500,7 +500,7 @@ def get_dashboard_ui():
 </body>
 </html>
 """
-    return html_content
+    return HTMLResponse(content=html_content)
 
 
 @app.get("/health")

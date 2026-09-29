@@ -9,15 +9,51 @@ from typing import Any, Dict, List, Optional
 import urllib.request
 import urllib.error
 
-from hindsight_client import (
-    Hindsight,
-    RecallResponse,
-    RecallResult,
-    ReflectFact,
-    ReflectResponse,
-    RetainResponse,
-)
-from hindsight_client_api.models.reflect_based_on import ReflectBasedOn
+try:
+    from hindsight_client import (
+        Hindsight,
+        RecallResponse,
+        RecallResult,
+        ReflectFact,
+        ReflectResponse,
+        RetainResponse,
+    )
+    from hindsight_client_api.models.reflect_based_on import ReflectBasedOn
+except ImportError:
+    class Hindsight:
+        def __init__(self, *args, **kwargs):
+            pass
+
+    class RecallResult:
+        def __init__(self, id=None, text="", metadata=None, tags=None, timestamp="", score=1.0, **kwargs):
+            self.id = id
+            self.text = text
+            self.metadata = metadata or {}
+            self.tags = tags or []
+            self.timestamp = timestamp
+            self.score = score
+
+    class RecallResponse:
+        def __init__(self, results=None, **kwargs):
+            self.results = results or []
+
+    class ReflectFact:
+        def __init__(self, fact="", id=None, **kwargs):
+            self.fact = fact
+            self.id = id
+
+    class ReflectResponse:
+        def __init__(self, facts=None, **kwargs):
+            self.facts = facts or []
+
+    class RetainResponse:
+        def __init__(self, count=0, **kwargs):
+            self.count = count
+
+    class ReflectBasedOn:
+        OPINIONS = "opinions"
+        FACTS = "facts"
+
 from src.config import BankConfig, settings
 
 logger = logging.getLogger(__name__)
