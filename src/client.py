@@ -344,28 +344,41 @@ class HindsightMemoryClient:
     def recall(
         self,
         bank_id: str,
-        query: str,
+        query: str = "",
         source_type: Optional[str] = None,
         min_rating: Optional[int] = None,
         max_rating: Optional[int] = None,
+        app_version: Optional[str] = None,
+        sentiment: Optional[str] = None,
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
-        limit: int = 20,
+        limit: int = 50,
     ) -> RecallResponse:
         """Searches memories with query text and basic metadata filters."""
         if self.is_live() and self._live_client:
             try:
-                res = self._live_client.recall(bank_id=bank_id, query=query)
+                res = self._live_client.recall(bank_id=bank_id, query=query or "*")
                 # Apply client-side filters if returned
                 filtered_results = []
                 for item in getattr(res, "results", []):
                     meta = getattr(item, "metadata", {}) or {}
                     if source_type and meta.get("source", "").lower() != source_type.lower():
                         continue
-                    if min_rating is not None and int(meta.get("rating", 0)) < min_rating:
+                    rating_val = int(meta.get("rating", 3)) if meta.get("rating") else 3
+                    if min_rating is not None and rating_val < min_rating:
                         continue
-                    if max_rating is not None and int(meta.get("rating", 999)) > max_rating:
+                    if max_rating is not None and rating_val > max_rating:
                         continue
+                    if app_version and app_version.lower() not in meta.get("app_version", "").lower():
+                        continue
+                    if sentiment:
+                        s_low = sentiment.lower()
+                        if s_low == "positive" and rating_val < 4:
+                            continue
+                        elif s_low == "negative" and rating_val > 2:
+                            continue
+                        elif s_low == "neutral" and rating_val != 3:
+                            continue
                     filtered_results.append(item)
                 return RecallResponse(results=filtered_results[:limit])
             except Exception as e:
@@ -375,8 +388,9 @@ class HindsightMemoryClient:
         data = self._load_storage()
         memories = data.get("memories", {}).get(bank_id, [])
 
-        query_tokens = set(re.findall(r"\w+", query.lower()))
-        scored_results: List[RecallResult] = []
+        q_clean = (query or "").strip()
+        query_tokens = set(re.findall(r"\w+", q_clean.lower())) if q_clean and q_clean != "*" else set()
+        scored_results: List[Tuple[float, RecallResult]] = []
 
         for m in memories:
             text = m["text"]
@@ -384,14 +398,32 @@ class HindsightMemoryClient:
             tags = m.get("tags", [])
             ts_str = m.get("timestamp", "")
 
-            # Filters
+            # Source Filter
             if source_type and meta.get("source", "").lower() != source_type.lower():
                 continue
+
+            # Rating Filter
             rating_val = int(meta.get("rating", 3)) if meta.get("rating") else 3
             if min_rating is not None and rating_val < min_rating:
                 continue
             if max_rating is not None and rating_val > max_rating:
                 continue
+
+            # App Version Filter
+            if app_version and app_version.lower() not in meta.get("app_version", "").lower():
+                continue
+
+            # Sentiment Filter
+            if sentiment:
+                s_low = sentiment.lower()
+                if s_low == "positive" and rating_val < 4:
+                    continue
+                elif s_low == "negative" and rating_val > 2:
+                    continue
+                elif s_low == "neutral" and rating_val != 3:
+                    continue
+
+            # Date Range Filter
             if start_date and ts_str < start_date:
                 continue
             if end_date and ts_str > end_date:
@@ -400,16 +432,20 @@ class HindsightMemoryClient:
             # Scoring: token overlap + title overlap + recency
             text_lower = text.lower()
             title_lower = meta.get("title", "").lower()
-            combined_text = f"{title_lower} {text_lower} {' '.join(tags)}"
+            user_lower = meta.get("user_name", "").lower()
+            combined_text = f"{title_lower} {text_lower} {user_lower} {' '.join(tags)}"
 
-            matches = sum(1 for token in query_tokens if token in combined_text)
-            if matches == 0 and query.strip() != "*":
-                continue
-
-            score = matches / max(len(query_tokens), 1)
-            # Extra boost for exact phrase match
-            if query.lower() in combined_text:
-                score += 1.0
+            if not query_tokens:
+                # No text query provided - match all records passing metadata filters
+                score = 1.0
+            else:
+                matches = sum(1 for token in query_tokens if token in combined_text)
+                if matches == 0:
+                    continue
+                score = matches / max(len(query_tokens), 1)
+                # Extra boost for exact phrase match
+                if q_clean.lower() in combined_text:
+                    score += 2.0
 
             result_item = RecallResult(
                 id=m["id"],

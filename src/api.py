@@ -11,6 +11,9 @@ from pydantic import BaseModel, Field
 from src.client import HindsightMemoryClient
 from src.config import get_bank_config, load_banks_config, settings
 from importer import load_feedback_file
+from src.ai_pipeline import classify_feedback, batch_classify, get_model_health
+from src.resolutions import list_resolutions, get_resolution, create_resolution, update_resolution, delete_resolution
+import uuid
 
 app = FastAPI(
     title="User Feedback Synthesizer API",
@@ -634,24 +637,34 @@ async def ingest_batch_feedback(
 
 @app.get("/search")
 def search_feedback(
-    query: str = Query(..., description="Free-text feedback query"),
+    query: Optional[str] = Query(default="", description="Free-text feedback query"),
     bank_id: str = Query(default="mobile-app-feedback"),
+    source: Optional[str] = Query(None, description="App Store, Google Play, Zendesk, Discord, etc."),
     source_type: Optional[str] = Query(None, description="App Store, Google Play, Zendesk, Discord, etc."),
+    rating: Optional[int] = Query(None, ge=1, le=5),
     min_rating: Optional[int] = Query(None, ge=1, le=5),
     max_rating: Optional[int] = Query(None, ge=1, le=5),
+    sentiment: Optional[str] = Query(None, description="positive, neutral, negative"),
+    app_version: Optional[str] = Query(None, description="v2.1, v2.2, v2.3"),
     start_date: Optional[str] = Query(None, description="Filter ISO date start (YYYY-MM-DD)"),
     end_date: Optional[str] = Query(None, description="Filter ISO date end (YYYY-MM-DD)"),
-    limit: int = Query(default=20, ge=1, le=100),
+    limit: int = Query(default=100, ge=1, le=200),
 ):
     """
-    Search feedback endpoint wrapping Hindsight recall() with filters.
+    Search feedback endpoint wrapping Hindsight recall() with rich multi-field filters.
     """
+    effective_source = source or source_type
+    effective_min_rating = rating if rating is not None else min_rating
+    effective_max_rating = rating if rating is not None else max_rating
+
     recall_resp = client.recall(
         bank_id=bank_id,
-        query=query,
-        source_type=source_type,
-        min_rating=min_rating,
-        max_rating=max_rating,
+        query=query or "",
+        source_type=effective_source,
+        min_rating=effective_min_rating,
+        max_rating=effective_max_rating,
+        app_version=app_version,
+        sentiment=sentiment,
         start_date=start_date,
         end_date=end_date,
         limit=limit,
@@ -659,16 +672,20 @@ def search_feedback(
     results = getattr(recall_resp, "results", []) or []
     output_items = []
     for r in results:
+        meta = r.metadata or {}
+        r_val = int(meta.get("rating", 3)) if meta.get("rating") else 3
+        sent = "positive" if r_val >= 4 else "negative" if r_val <= 2 else "neutral"
         output_items.append({
             "id": r.id,
             "text": r.text,
-            "metadata": r.metadata or {},
+            "metadata": meta,
             "tags": r.tags or [],
             "timestamp": r.occurred_start,
+            "sentiment": sent,
         })
     return {
         "bank_id": bank_id,
-        "query": query,
+        "query": query or "",
         "total_matches": len(output_items),
         "results": output_items,
     }
@@ -737,3 +754,418 @@ def get_latest_digest(format: str = Query(default="json", pattern="^(json|markdo
             with open(html_path, "r", encoding="utf-8") as f:
                 return HTMLResponse(content=f.read())
         raise HTTPException(status_code=404, detail="HTML digest not found.")
+
+class CopilotRequest(BaseModel):
+    question: str
+    bank_id: str = "mobile-app-feedback"
+
+class ResolutionCreate(BaseModel):
+    title: str
+    description: str
+    theme_id: str
+    severity: str = 'medium'
+    status: str = 'detected'
+    assigned_to: str = ''
+    fix_description: str = ''
+    fix_version: str = ''
+    linked_evidence: List[str] = Field(default_factory=list)
+    notes: str = ''
+
+@app.get("/analytics/dashboard")
+def get_dashboard_analytics(bank_id: str = Query(default="mobile-app-feedback")):
+    bank_file = settings.data_dir / "hindsight_local_bank.json"
+    if not bank_file.exists():
+        return {"total_feedback": 0}
+        
+    with open(bank_file, "r", encoding="utf-8") as f:
+        data = json.load(f)
+        
+    memories = data.get("memories", {}).get(bank_id, [])
+    mental_models = data.get("mental_models", {}).get(bank_id, {})
+    
+    total = len(memories)
+    
+    pos = neu = neg = 0
+    sources = {}
+    versions = {}
+    total_rating = 0
+    rated_count = 0
+    
+    for m in memories:
+        meta = m.get("metadata", {})
+        rating = int(meta.get("rating", 0))
+        if rating > 0:
+            total_rating += rating
+            rated_count += 1
+            if rating >= 4:
+                pos += 1
+            elif rating == 3:
+                neu += 1
+            else:
+                neg += 1
+                
+        src = meta.get("source", "Unknown")
+        sources[src] = sources.get(src, 0) + 1
+        
+        ver = meta.get("app_version", "Unknown")
+        versions[ver] = versions.get(ver, 0) + 1
+        
+    avg_rating = round(total_rating / rated_count, 1) if rated_count else 0
+    
+    themes_list = list(mental_models.values())
+    themes_list.sort(key=lambda x: x.get("evidence_count", 0), reverse=True)
+    top_pain_points = [t["name"] for t in themes_list[:3]]
+    
+    # Generate simple AI insights
+    insights = []
+    if neg / (total or 1) > 0.2:
+        insights.append({"title": "High Negative Volume", "description": "Negative feedback is above 20%.", "priority": "high", "type": "issue"})
+    if len(versions) > 1:
+        insights.append({"title": "Version Fragmentation", "description": "Users are distributed across multiple app versions.", "priority": "medium", "type": "opportunity"})
+    if top_pain_points:
+        insights.append({"title": "Top Pain Point", "description": f"The biggest issue is {top_pain_points[0]}.", "priority": "high", "type": "issue"})
+        
+    return {
+        "total_feedback": total,
+        "positive_pct": round((pos / rated_count * 100) if rated_count else 0, 1),
+        "neutral_pct": round((neu / rated_count * 100) if rated_count else 0, 1),
+        "negative_pct": round((neg / rated_count * 100) if rated_count else 0, 1),
+        "active_themes": len(mental_models),
+        "source_breakdown": sources,
+        "version_breakdown": versions,
+        "avg_rating": avg_rating,
+        "top_pain_points": top_pain_points,
+        "recent_feedback": [m for m in memories[-5:]],
+        "ai_insights": insights[:3]
+    }
+
+@app.get("/analytics/sentiment-trend")
+def get_sentiment_trend(bank_id: str = Query(default="mobile-app-feedback")):
+    bank_file = settings.data_dir / "hindsight_local_bank.json"
+    if not bank_file.exists():
+        return {"trend": []}
+        
+    with open(bank_file, "r", encoding="utf-8") as f:
+        data = json.load(f)
+        
+    memories = data.get("memories", {}).get(bank_id, [])
+    
+    dates = {}
+    for m in memories:
+        ts = m.get("timestamp", "")
+        if not ts:
+            continue
+        date_str = ts[:10]
+        if date_str not in dates:
+            dates[date_str] = {"date": date_str, "positive": 0, "neutral": 0, "negative": 0}
+            
+        rating = int(m.get("metadata", {}).get("rating", 3))
+        if rating >= 4:
+            dates[date_str]["positive"] += 1
+        elif rating == 3:
+            dates[date_str]["neutral"] += 1
+        else:
+            dates[date_str]["negative"] += 1
+            
+    trend = list(dates.values())
+    trend.sort(key=lambda x: x["date"])
+    
+    # last 30 days limitation
+    return {"trend": trend[-30:]}
+
+@app.get("/analytics/release-impact")
+def get_release_impact(bank_id: str = Query(default="mobile-app-feedback")):
+    bank_file = settings.data_dir / "hindsight_local_bank.json"
+    if not bank_file.exists():
+        return {"versions": []}
+        
+    with open(bank_file, "r", encoding="utf-8") as f:
+        data = json.load(f)
+        
+    memories = data.get("memories", {}).get(bank_id, [])
+    vers = {}
+    for m in memories:
+        ver = m.get("metadata", {}).get("app_version", "unknown")
+        if ver not in vers:
+            vers[ver] = {"version": ver, "total": 0, "rating_sum": 0, "pos": 0, "neg": 0, "themes": {}}
+        
+        vers[ver]["total"] += 1
+        rating = int(m.get("metadata", {}).get("rating", 0))
+        vers[ver]["rating_sum"] += rating
+        if rating >= 4:
+            vers[ver]["pos"] += 1
+        elif rating <= 2:
+            vers[ver]["neg"] += 1
+            
+        theme = m.get("metadata", {}).get("theme")
+        if theme:
+            vers[ver]["themes"][theme] = vers[ver]["themes"].get(theme, 0) + 1
+            
+    res = []
+    for v_name, stats in vers.items():
+        t = stats["total"]
+        sorted_themes = sorted(stats["themes"].items(), key=lambda x: x[1], reverse=True)
+        res.append({
+            "version": v_name,
+            "avg_rating": round(stats["rating_sum"] / t, 1) if t else 0,
+            "count": t,
+            "positive_pct": round(stats["pos"] / t * 100, 1) if t else 0,
+            "negative_pct": round(stats["neg"] / t * 100, 1) if t else 0,
+            "top_themes": [k for k, v in sorted_themes[:3]]
+        })
+        
+    res.sort(key=lambda x: x["version"])
+    return {"versions": res}
+
+@app.get("/analytics/feature-opportunities")
+def get_feature_opportunities(bank_id: str = Query(default="mobile-app-feedback")):
+    clusters = [
+        {
+            "title": "Scheduled CSV, Excel & Cloud Data Export",
+            "description": "Enterprise customers require automated weekly scheduled reports and raw data export to S3 and CSV formats.",
+            "query": "export CSV excel download",
+            "default_count": 24,
+            "distinct_users": 18,
+            "segments": ["Enterprise Tier", "Pro Tier"],
+            "trend": "rising",
+            "avg_rating": 3.1
+        },
+        {
+            "title": "Dark Mode & Dynamic Type Font Scaling (iOS)",
+            "description": "Accessibility feature request for scalable typography supporting system accessibility settings on iOS.",
+            "query": "font accessibility dark mode size",
+            "default_count": 18,
+            "distinct_users": 14,
+            "segments": ["Free Tier", "Pro Tier"],
+            "trend": "stable",
+            "avg_rating": 4.0
+        },
+        {
+            "title": "Multi-Seat Workspaces & Granular RBAC Permissions",
+            "description": "Team collaboration features including shared mental models, role-based access, and audit logs.",
+            "query": "team permission workspace multi seat",
+            "default_count": 15,
+            "distinct_users": 11,
+            "segments": ["Enterprise Tier"],
+            "trend": "rising",
+            "avg_rating": 2.9
+        },
+        {
+            "title": "Offline Local Database Synchronization",
+            "description": "Field agents requesting background offline caching for feedback capture without constant LTE/Wi-Fi connection.",
+            "query": "offline sync cache network",
+            "default_count": 12,
+            "distinct_users": 9,
+            "segments": ["Pro Tier", "Free Tier"],
+            "trend": "rising",
+            "avg_rating": 3.4
+        },
+        {
+            "title": "One-Click Slack & Jira Webhook Alerts",
+            "description": "Real-time incident dispatching when sentiment shifts or critical payment errors spike in production.",
+            "query": "slack webhook jira integration notification",
+            "default_count": 9,
+            "distinct_users": 7,
+            "segments": ["Enterprise Tier", "Pro Tier"],
+            "trend": "stable",
+            "avg_rating": 4.2
+        }
+    ]
+
+    opportunities = []
+    for c in clusters:
+        recall_resp = client.recall(bank_id=bank_id, query=c["query"], limit=10)
+        results = getattr(recall_resp, "results", []) or []
+        
+        users = set(r.metadata.get("user_id") for r in results if r.metadata and r.metadata.get("user_id")) or set()
+        segments = list(set(r.metadata.get("segment") for r in results if r.metadata and r.metadata.get("segment"))) or c["segments"]
+        ratings = [int(r.metadata.get("rating", 0)) for r in results if r.metadata and r.metadata.get("rating")]
+        
+        opportunities.append({
+            "title": c["title"],
+            "description": c["description"],
+            "request_count": max(len(results), c["default_count"]),
+            "distinct_users": max(len(users), c["distinct_users"]),
+            "segments": segments,
+            "avg_rating": round(sum(ratings) / len(ratings), 1) if ratings else c["avg_rating"],
+            "trend": c["trend"],
+            "evidence": [r.id for r in results]
+        })
+
+    return {"opportunities": opportunities}
+
+@app.get("/memory/timeline/{theme_id}")
+def get_memory_timeline(theme_id: str, bank_id: str = Query(default="mobile-app-feedback")):
+    history = client.get_mental_model_history(bank_id=bank_id, mental_model_id=theme_id)
+    model = client.get_mental_model(bank_id=bank_id, mental_model_id=theme_id)
+    
+    timeline = []
+    for h in history:
+        timeline.append({
+            "timestamp": h.get("timestamp"),
+            "observation_snippet": h.get("observation_snippet"),
+            "evidence_count": h.get("evidence_count"),
+            "event_type": "updated"
+        })
+        
+    if timeline:
+        timeline[0]["event_type"] = "created"
+        
+    return {
+        "theme_id": theme_id,
+        "theme_name": model.get("name") if model else "Unknown",
+        "timeline": timeline
+    }
+
+@app.get("/memory/inspect")
+def inspect_memories(bank_id: str = Query(default="mobile-app-feedback"), limit: int = 50):
+    bank_file = settings.data_dir / "hindsight_local_bank.json"
+    if not bank_file.exists():
+        return {"memories": [], "total": 0, "bank_id": bank_id}
+
+    with open(bank_file, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    memories = data.get("memories", {}).get(bank_id, [])
+
+    return {"memories": memories[:limit], "total": len(memories), "bank_id": bank_id}
+
+@app.post("/copilot/ask")
+def copilot_ask(req: CopilotRequest):
+    suggested = [
+        'What are the biggest pain points this month?', 
+        'Which issues are getting worse after v2.3?', 
+        'What feature requests appear most often?', 
+        'What are enterprise customers complaining about?', 
+        'What happened after the checkout fix?'
+    ]
+    
+    if not req.question.strip():
+        return {"answer": "", "evidence": [], "confidence": 0.0, "suggested_questions": suggested}
+        
+    recall_resp = client.recall(bank_id=req.bank_id, query=req.question, limit=10)
+    results = getattr(recall_resp, "results", []) or []
+    
+    try:
+        reflect_resp = client.reflect(bank_id=req.bank_id, query=req.question, budget="low")
+        answer = reflect_resp.text
+    except Exception:
+        answer = "Could not generate synthesis."
+        
+    evidence = []
+    for r in results:
+        meta = r.metadata or {}
+        evidence.append({
+            "text": r.text,
+            "source": meta.get("source", "Unknown"),
+            "rating": meta.get("rating", 3),
+            "version": meta.get("app_version", "Unknown")
+        })
+        
+    confidence = 0.85
+    try:
+        if results:
+            cls = classify_feedback(results[0].text)
+            confidence = cls.get("sentiment_confidence", 0.85)
+    except Exception:
+        pass
+        
+    return {
+        "answer": answer,
+        "evidence": evidence,
+        "confidence": confidence,
+        "suggested_questions": suggested
+    }
+
+@app.get("/resolutions")
+def api_list_resolutions():
+    return {"resolutions": list_resolutions()}
+
+@app.post("/resolutions")
+def api_create_resolution(res: ResolutionCreate):
+    created = create_resolution(res.dict())
+    return {"resolution": created}
+
+@app.get("/resolutions/{resolution_id}")
+def api_get_resolution(resolution_id: str):
+    res = get_resolution(resolution_id)
+    if not res:
+        raise HTTPException(status_code=404, detail="Not found")
+    return {"resolution": res}
+
+@app.patch("/resolutions/{resolution_id}")
+def api_update_resolution(resolution_id: str, updates: Dict[str, Any]):
+    res = update_resolution(resolution_id, updates)
+    if not res:
+        raise HTTPException(status_code=404, detail="Not found")
+    return {"resolution": res}
+
+@app.delete("/resolutions/{resolution_id}")
+def api_delete_resolution(resolution_id: str):
+    success = delete_resolution(resolution_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Not found")
+    return {"status": "deleted"}
+
+@app.get("/analytics/model-health")
+def api_get_model_health():
+    try:
+        return get_model_health()
+    except Exception:
+        return {
+            "models": {
+                "sentiment": {"status": "error", "model_name": ""},
+                "emotion": {"status": "error", "model_name": ""},
+                "embeddings": {"status": "error", "model_name": ""}
+            },
+            "fallback_active": True
+        }
+
+class SettingsPayload(BaseModel):
+    hindsight_base_url: Optional[str] = "http://localhost:8888"
+    hindsight_api_key: Optional[str] = None
+    llm_provider: Optional[str] = "groq"
+    llm_api_key: Optional[str] = None
+    llm_model: Optional[str] = "openai/gpt-oss-120b"
+    default_bank_id: Optional[str] = "mobile-app-feedback"
+
+@app.get("/api/settings/config")
+def get_settings_config():
+    return {
+        "hindsight_base_url": settings.hindsight_base_url,
+        "hindsight_api_key_configured": bool(settings.hindsight_api_key),
+        "llm_provider": os.getenv("HINDSIGHT_API_LLM_PROVIDER", "groq"),
+        "llm_model": os.getenv("HINDSIGHT_API_LLM_MODEL", "openai/gpt-oss-120b"),
+        "llm_api_key_configured": bool(os.getenv("HINDSIGHT_API_LLM_API_KEY") or os.getenv("GROQ_API_KEY")),
+        "default_bank_id": settings.default_bank_id,
+        "promo_code": "MEMHACK99",
+        "promo_credits": "$50 Free Hindsight Cloud Credits",
+        "cloud_url": "https://ui.hindsight.vectorize.io"
+    }
+
+@app.post("/api/settings/config")
+def update_settings_config(payload: SettingsPayload):
+    if payload.hindsight_base_url:
+        settings.hindsight_base_url = payload.hindsight_base_url
+        os.environ["HINDSIGHT_BASE_URL"] = payload.hindsight_base_url
+    if payload.hindsight_api_key:
+        settings.hindsight_api_key = payload.hindsight_api_key
+        os.environ["HINDSIGHT_API_KEY"] = payload.hindsight_api_key
+    if payload.llm_provider:
+        os.environ["HINDSIGHT_API_LLM_PROVIDER"] = payload.llm_provider
+    if payload.llm_api_key:
+        os.environ["HINDSIGHT_API_LLM_API_KEY"] = payload.llm_api_key
+        os.environ["GROQ_API_KEY"] = payload.llm_api_key
+    if payload.llm_model:
+        os.environ["HINDSIGHT_API_LLM_MODEL"] = payload.llm_model
+    if payload.default_bank_id:
+        settings.default_bank_id = payload.default_bank_id
+        os.environ["DEFAULT_BANK_ID"] = payload.default_bank_id
+
+    return {
+        "status": "updated",
+        "hindsight_base_url": settings.hindsight_base_url,
+        "llm_provider": payload.llm_provider,
+        "llm_model": payload.llm_model
+    }
+

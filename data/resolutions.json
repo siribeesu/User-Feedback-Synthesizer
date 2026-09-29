@@ -1,0 +1,123 @@
+{
+  "resolutions": {
+    "res-001": {
+      "id": "res-001",
+      "title": "Payment gateway timeout & checkout crash",
+      "description": "Stripe/Apple Pay webhook timeout during peak checkout hours on v2.3 release causing 504 errors.",
+      "theme_id": "release-v23-stability",
+      "severity": "critical",
+      "status": "investigating",
+      "assigned_to": "Payments Core (Alex Chen)",
+      "detected_at": "2026-09-20T10:15:00Z",
+      "resolved_at": null,
+      "fix_description": "Increasing gateway socket timeout to 15s and adding idempotency retry tokens.",
+      "fix_version": "v2.3.1-hotfix",
+      "linked_evidence": [
+        "FB-0002",
+        "FB-0014",
+        "FB-0029"
+      ],
+      "before_avg_rating": 1.4,
+      "after_avg_rating": null,
+      "feedback_count_before": 18,
+      "feedback_count_after": 0,
+      "verification_status": "pending",
+      "notes": "Spike detected via Zendesk and Discord error channels.",
+      "updated_at": "2026-09-28T14:20:00Z"
+    },
+    "res-002": {
+      "id": "res-002",
+      "title": "SMS verification 6-digit code delay on Android",
+      "description": "Twilio SMS carrier latency in APAC region causes user onboarding session timeouts before token arrives.",
+      "theme_id": "onboarding-friction",
+      "severity": "high",
+      "status": "in_progress",
+      "assigned_to": "Identity & Auth (Priya Rao)",
+      "detected_at": "2026-09-15T08:30:00Z",
+      "resolved_at": null,
+      "fix_description": "Added multi-carrier fallback (MessageBird/Vonage) and extended token validity window to 15 minutes.",
+      "fix_version": "v2.4",
+      "linked_evidence": [
+        "FB-0001",
+        "FB-0019"
+      ],
+      "before_avg_rating": 1.8,
+      "after_avg_rating": null,
+      "feedback_count_before": 12,
+      "feedback_count_after": 0,
+      "verification_status": "pending",
+      "notes": "9 out of 10 free-tier dropoffs occur at this step.",
+      "updated_at": "2026-09-28T11:00:00Z"
+    },
+    "res-003": {
+      "id": "res-003",
+      "title": "Dynamic Type font scaling support on iOS",
+      "description": "App ignored system enlarged accessibility fonts, leaving text at fixed 11pt.",
+      "theme_id": "onboarding-friction",
+      "severity": "medium",
+      "status": "resolved",
+      "assigned_to": "iOS Client (Marcus Liu)",
+      "detected_at": "2026-09-10T14:00:00Z",
+      "resolved_at": "2026-09-25T16:00:00Z",
+      "fix_description": "Adopted UIFontMetrics and scalable auto-layout constraints across all core dashboard views.",
+      "fix_version": "v2.3.2",
+      "linked_evidence": [
+        "FB-0039"
+      ],
+      "before_avg_rating": 2.0,
+      "after_avg_rating": 4.5,
+      "feedback_count_before": 6,
+      "feedback_count_after": 2,
+      "verification_status": "improved",
+      "notes": "Verified by accessibility QA team.",
+      "updated_at": "2026-09-26T09:30:00Z"
+    },
+    "res-004": {
+      "id": "res-004",
+      "title": "CSV / Excel / PDF data export integration",
+      "description": "Enterprise customers require automated weekly data export to CSV and JSON formats.",
+      "theme_id": "feature-requests-export",
+      "severity": "medium",
+      "status": "verified",
+      "assigned_to": "Platform Data (Sarah Taylor)",
+      "detected_at": "2026-08-20T09:00:00Z",
+      "resolved_at": "2026-09-18T18:00:00Z",
+      "fix_description": "Implemented background worker for asynchronous CSV/JSON export with signed S3 download URLs.",
+      "fix_version": "v2.3",
+      "linked_evidence": [
+        "FB-0045",
+        "FB-0062"
+      ],
+      "before_avg_rating": 3.1,
+      "after_avg_rating": 4.8,
+      "feedback_count_before": 15,
+      "feedback_count_after": 1,
+      "verification_status": "improved",
+      "notes": "NPS score for enterprise segment rose +18 points following release.",
+      "updated_at": "2026-09-27T12:00:00Z"
+    },
+    "res-005": {
+      "id": "res-005",
+      "title": "Biometric FaceID authentication mismatch on iOS 18",
+      "description": "Keychain access group misconfiguration prevents biometric key invalidation on app upgrade.",
+      "theme_id": "release-v23-stability",
+      "severity": "high",
+      "status": "detected",
+      "assigned_to": "Security & Core (David Kim)",
+      "detected_at": "2026-09-28T17:45:00Z",
+      "resolved_at": null,
+      "fix_description": "Under triage.",
+      "fix_version": "v2.4",
+      "linked_evidence": [
+        "FB-0071"
+      ],
+      "before_avg_rating": 2.2,
+      "after_avg_rating": null,
+      "feedback_count_before": 8,
+      "feedback_count_after": 0,
+      "verification_status": "pending",
+      "notes": "Reported in Discord community beta channel.",
+      "updated_at": "2026-09-29T08:00:00Z"
+    }
+  }
+}

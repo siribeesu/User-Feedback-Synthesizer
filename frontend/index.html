@@ -4,34 +4,7 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>User Feedback Synthesizer</title>
-    <!-- Pre-hydration Inline Script: Zero FOUT / Theme Flash Guarantee -->
-    <script>
-      (function() {
-        try {
-          var storageKey = 'ufs_theme_v1';
-          var legacyKey = 'ufs_theme';
-          var stored = null;
-          try {
-            stored = window.localStorage.getItem(storageKey) || window.localStorage.getItem(legacyKey);
-          } catch (e) {
-            // LocalStorage disabled, blocked, or security exception
-          }
-
-          var theme = 'dark'; // baseline fallback
-          if (stored === 'light' || stored === 'dark') {
-            theme = stored;
-          } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
-            theme = 'light';
-          } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-            theme = 'dark';
-          }
-          document.documentElement.setAttribute('data-theme', theme);
-        } catch (err) {
-          // Fail gracefully without interrupting page load
-        }
-      })();
-    </script>
+    <title>Fedar — AI Product Intelligence Platform</title>
   </head>
   <body>
     <div id="root"></div>
